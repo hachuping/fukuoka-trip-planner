@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUKUOKA Trip Planner v22</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root{
+    --navy:#174d7d; --blue:#2d72ae; --sky:#eaf4fb; --cream:#fff8e6;
+    --green:#4b8f58; --orange:#e88942; --pink:#e85b77; --ink:#24313d;
+    --muted:#71808d; --line:#dfe6ec; --bg:#f6f8fb; --white:#fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink)}
+  button{font:inherit}
+  .app{max-width:1500px;margin:0 auto}
+  header{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:16px;padding:14px 18px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--navy);font-size:20px;min-width:240px}
+  .logo-badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2a74b6,#173f6a);color:#fff;display:grid;place-items:center;font-size:22px}
+  .nav{display:flex;gap:8px;flex-wrap:wrap}
+  .nav button,.date-tabs button{border:0;background:#f2f5f8;color:#61707d;padding:10px 16px;border-radius:14px;font-weight:700;cursor:pointer}
+  .nav button.active{background:var(--navy);color:#fff}
+  .right{margin-left:auto;display:flex;gap:8px}
+  .icon-btn{width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer}
+  .hero{padding:22px 22px 10px}
+  .trip-title{font-size:30px;font-weight:900;margin:0}
+  .subtitle{color:var(--muted);margin-top:6px}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:18px;padding:10px 18px 24px}
+  .sidebar{display:flex;flex-direction:column;gap:14px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 20px rgba(26,50,74,.05)}
+  .panel h3{margin:0;padding:16px 17px;border-bottom:1px solid var(--line);font-size:15px}
+  .panel-body{padding:15px 17px}
+  .info-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;color:#55636e;font-size:13px}
+  .info-row strong{color:var(--ink)}
+  .day-summary{display:grid;gap:8px}
+  .day-chip{display:flex;gap:10px;align-items:center;padding:11px 10px;border-radius:14px;background:#f8fafc;cursor:pointer}
+  .day-chip .date{width:62px;text-align:center;border-radius:12px;color:#fff;padding:6px 4px;font-weight:800;font-size:12px}
+  .d1{background:var(--navy)} .d2{background:var(--green)} .d3{background:var(--pink)} .d4{background:var(--orange)}
+  .progress{height:8px;background:#edf1f4;border-radius:99px;overflow:hidden}
+  .progress>span{display:block;height:100%;width:35%;background:linear-gradient(90deg,var(--navy),#5aa4d5)}
+  main{min-width:0}
+  .map-wrap{position:relative;height:600px;border-radius:22px;overflow:hidden;border:1px solid var(--line);box-shadow:0 12px 28px rgba(26,50,74,.08)}
+  #map{height:100%}
+  .legend{position:absolute;left:18px;top:18px;z-index:500;background:rgba(255,255,255,.95);padding:12px 14px;border-radius:14px;box-shadow:0 6px 16px rgba(0,0,0,.08);font-size:13px}
+  .legend div{margin:5px 0}
+  .map-title{position:absolute;right:18px;top:18px;z-index:500;background:rgba(255,255,255,.95);padding:10px 14px;border-radius:12px;font-weight:800}
+  .timeline{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .section-head h2{margin:0;font-size:22px}
+  .pill{background:var(--sky);color:var(--navy);padding:8px 11px;border-radius:999px;font-size:12px;font-weight:800}
+  .route-bar{display:flex;align-items:center;gap:8px;overflow:auto;padding:13px 0 18px}
+  .route-step{min-width:150px;padding:12px;border-radius:15px;background:#f8fbfd;border:1px solid var(--line)}
+  .route-step .time{font-size:12px;color:var(--muted)}
+  .route-step .place{font-weight:800;margin-top:5px}
+  .arrow{font-size:20px;color:var(--blue)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:11px 9px;border-top:1px solid var(--line);vertical-align:top}
+  th{color:#6d7885;text-align:left;font-weight:700;background:#fbfcfd}
+  td strong{color:var(--navy)}
+  .food-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+  .food-card{border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff}
+  .rank{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:900;color:#fff;margin-right:7px}
+  .r1{background:#d39a1b}.r2{background:#7e8b97}.r3{background:#b8683b}
+  .food-name{font-weight:900;color:var(--ink)}
+  .food-meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .small-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 10px;cursor:pointer}
+  .bottom-nav{display:none}
+  .hidden{display:none!important}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;place-items:center;z-index:3000}
+  .modal.show{display:grid}
+  .modal-card{width:min(680px,92vw);max-height:85vh;overflow:auto;background:#fff;border-radius:20px;padding:22px}
+  .modal-card h2{margin-top:0}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  label{font-size:12px;color:var(--muted);font-weight:700}
+  input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:5px}
+  textarea{min-height:90px;resize:vertical}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  .primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+
+  /* ===== Full map view ===== */
+  .full-map-modal{
+    position:fixed;inset:0;background:rgba(15,28,40,.72);
+    display:grid;place-items:center;z-index:5000;padding:14px;
+    visibility:hidden;opacity:0;pointer-events:none;
+    transition:opacity .16s ease,visibility .16s ease;
+  }
+  .full-map-modal.show{
+    visibility:visible;opacity:1;pointer-events:auto;
+  }
+  .full-map-card{
+    width:min(1100px,96vw);height:min(90vh,850px);background:#fff;
+    border-radius:22px;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,.28);
+  }
+  .full-map-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 14px;border-bottom:1px solid var(--line);background:#fff;
+  }
+  .full-map-head strong{font-size:16px}
+  .full-map-close{
+    width:38px;height:38px;border:1px solid var(--line);background:#fff;
+    border-radius:11px;font-size:20px;cursor:pointer;
+  }
+  #fullMap{flex:1;min-height:420px;width:100%;background:#e9eef2}
+  .full-map-legend{
+    position:absolute;left:14px;top:58px;z-index:500;background:rgba(255,255,255,.95);
+    padding:10px 12px;border-radius:13px;box-shadow:0 6px 16px rgba(0,0,0,.10);
+    font-size:12px;font-weight:700;
+  }
+  .full-map-legend div{margin:4px 0}
+  .map-action{
+    border:0;background:rgba(255,255,255,.96);padding:9px 12px;border-radius:12px;
+    font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.08);
+  }
+  .k-map-label{
+    background:rgba(255,255,255,.96);border:1px solid rgba(36,49,61,.16);
+    border-radius:10px;padding:5px 8px;min-width:56px;text-align:center;
+    color:#24313d;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap;
+    line-height:1.15;
+  }
+  .k-map-label strong{display:block;font-size:12px;font-weight:950}
+  .k-map-label span{display:block;margin-top:2px;font-size:9px;font-weight:700;color:#71808d}
+  .k-map-label::before{display:none}
+
+  @media(max-width:700px){
+    .full-map-head label{font-size:11px!important}
+    .full-map-head label input{width:17px!important;height:17px!important}
+    .map-wrap{height:360px}
+    .map-title{cursor:pointer}
+    .full-map-modal{padding:0}
+    .full-map-card{width:100vw;height:100dvh;border-radius:0}
+    .full-map-head{padding:10px 12px}
+    .full-map-head strong{font-size:14px}
+  }
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr}
+    .sidebar{order:2}
+    .map-wrap{height:500px}
+  }
+  @media(max-width:700px){
+    .topbar{flex-wrap:wrap}.logo{min-width:auto}.right{margin-left:0}
+    .food-grid{grid-template-columns:1fr}
+    table{font-size:12px}
+    .map-wrap{height:430px}
+  }
+
+/* ===== Mobile planner polish ===== */
+.mobile-day-tabs{display:none}
+.day-color-legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.day-color-legend span{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;color:#fff}
+.map-day-marker{width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+.day-route-label{font-weight:800}
+
+@media(max-width:700px){
+  body{font-size:14px}
+  header{position:sticky;top:0}
+  .topbar{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:10px 12px 8px;
+  }
+  .logo{font-size:17px;gap:8px}
+  .logo-badge{width:36px;height:36px;border-radius:10px;font-size:19px}
+  .logo span{font-size:10px!important}
+  .nav{
+    width:100%;
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:6px;
+    padding-bottom:2px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{
+    flex:0 0 auto;
+    white-space:nowrap;
+    padding:8px 11px;
+    border-radius:12px;
+    font-size:13px;
+  }
+  .right{display:none}
+  .hero{padding:16px 16px 8px}
+  .trip-title{font-size:24px;line-height:1.25}
+  .subtitle{font-size:13px}
+  .mobile-day-tabs{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    padding:7px 16px 10px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    background:var(--bg);
+  }
+  .mobile-day-tabs::-webkit-scrollbar{display:none}
+  .mobile-day-tabs button{
+    flex:0 0 auto;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--muted);
+    border-radius:12px;
+    padding:8px 12px;
+    font-weight:900;
+    font-size:12px;
+  }
+  .mobile-day-tabs button.active{color:#fff;border-color:transparent}
+  .mobile-day-tabs .m1.active{background:var(--navy)}
+  .mobile-day-tabs .m2.active{background:var(--green)}
+  .mobile-day-tabs .m3.active{background:var(--pink)}
+  .mobile-day-tabs .m4.active{background:var(--orange)}
+
+  .layout{display:block;padding:6px 10px 18px}
+  .sidebar{display:none}
+  .map-wrap{
+    height:360px;
+    border-radius:18px;
+    margin:0;
+  }
+  .legend{
+    left:10px;top:10px;
+    padding:9px 10px;
+    font-size:11px;
+    max-width:150px;
+  }
+  .legend b{font-size:12px}
+  .legend div{margin:3px 0}
+  .map-title{
+    right:10px;top:10px;
+    padding:8px 10px;
+    font-size:12px;
+  }
+  .timeline{
+    margin-top:10px;
+    border-radius:18px;
+    padding:12px;
+  }
+  .section-head{align-items:flex-start}
+  .section-head h2{font-size:18px;line-height:1.3}
+  .pill{font-size:11px;padding:6px 8px}
+  .route-bar{
+    gap:6px;
+    padding:10px 0 12px;
+    overflow-x:auto;
+  }
+  .route-step{
+    min-width:112px;
+    padding:9px;
+    border-radius:12px;
+  }
+  .route-step .time{font-size:11px}
+  .route-step .place{font-size:12px}
+  .arrow{font-size:16px}
+
+  /* Turn the wide schedule table into readable mobile cards. */
+  .schedule-scroll{overflow:visible!important}
+  table,thead,tbody,tr,th,td{display:block}
+  table{font-size:13px}
+  thead{display:none}
+  #scheduleTable tr{
+    margin:0 0 9px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 3px 10px rgba(26,50,74,.04);
+  }
+  #scheduleTable td{
+    display:grid;
+    grid-template-columns:72px 1fr;
+    gap:8px;
+    padding:5px 0;
+    border:0;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #scheduleTable td::before{
+    content:attr(data-label);
+    color:#7a8792;
+    font-size:11px;
+    font-weight:800;
+  }
+  #scheduleTable td:first-child{
+    background:#f4f8fb;
+    margin:-2px -2px 5px;
+    padding:7px 6px;
+    border-radius:9px;
+    grid-template-columns:72px 1fr;
+  }
+  #scheduleTable td:first-child::before{color:var(--navy)}
+  #scheduleTable td strong{font-size:15px}
+
+  .food-grid{grid-template-columns:1fr;gap:8px;margin-top:10px}
+  .food-card{padding:12px;border-radius:14px}
+  .food-name{font-size:14px}
+  .food-meta{font-size:11px;line-height:1.5}
+  .section-head .small-btn{font-size:11px;padding:7px 8px;white-space:nowrap}
+}
+
+
+  .stay-card{
+    margin:14px 0 16px;padding:15px 16px;border:1px solid #dce5ec;
+    border-radius:18px;background:linear-gradient(135deg,#ffffff,#f5f9fc);
+    box-shadow:0 5px 16px rgba(36,49,61,.06);
+  }
+  .stay-card-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:950;color:#315c83;margin-bottom:8px}
+  .stay-card-name{font-size:17px;font-weight:950;color:#24313d;line-height:1.25}
+  .stay-card-ja{font-size:11px;color:#71808d;margin-top:3px}
+  .stay-card-info{font-size:12px;color:#596b79;margin-top:8px;line-height:1.45}
+
+
+@media(max-width:700px){
+  .stay-card{margin:10px 0 13px;padding:13px 14px;border-radius:16px}
+  .stay-card-name{font-size:15px}
+  .stay-card-ja{font-size:10px}
+  .stay-card-info{font-size:11px}
+}
+
+@media(max-width:700px){
+  header{position:relative}
+  .topbar{padding:10px 12px}
+  .logo{min-width:0}
+  .nav{overflow-x:auto;flex-wrap:nowrap;padding:0 4px 8px}
+  .nav button{white-space:nowrap}
+}
+
+
+
+/* ===== Flight tab ===== */
+.flight-section{
+  margin-top:18px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:18px;
+  box-shadow:0 8px 20px rgba(26,50,74,.05);
+}
+.flight-section-head{margin-bottom:14px}
+.flight-eyebrow{
+  color:var(--orange);
+  font-size:13px;
+  font-weight:950;
+  margin-bottom:4px;
+}
+.flight-section h2{margin:0;font-size:22px}
+.flight-section-head p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.flight-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:18px;
+  margin-top:12px;
+  box-shadow:0 5px 16px rgba(26,50,74,.05);
+}
+.flight-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.flight-code{font-size:15px;font-weight:950;color:#667684}
+.flight-badge{
+  padding:8px 13px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:12px;
+  background:var(--sky);
+  color:var(--navy);
+}
+.flight-badge.return{background:#eef4f8}
+.flight-route{
+  display:grid;
+  grid-template-columns:1fr 70px 1fr;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+  padding:6px 0 15px;
+}
+.airport strong{
+  display:block;
+  font-size:38px;
+  line-height:1;
+  letter-spacing:.5px;
+  color:#24313d;
+}
+.airport span{
+  display:block;
+  margin-top:7px;
+  color:#71808d;
+  font-size:14px;
+}
+.airport b{
+  display:block;
+  margin-top:10px;
+  color:var(--navy);
+  font-size:19px;
+}
+.right-airport{text-align:right}
+.plane{text-align:center;font-size:30px}
+
+.flight-file-link{
+  border:0;background:transparent;color:var(--navy);font:inherit;font-weight:900;
+  padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px
+}
+.flight-file-link:hover{opacity:.75}
+.flight-meta{
+  border-top:1px dashed var(--line);
+  padding-top:13px;
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  color:#71808d;
+  font-size:13px;
+}
+@media(max-width:700px){
+  .flight-section{margin-top:10px;padding:12px;border-radius:18px}
+  .flight-section h2{font-size:19px}
+  .flight-section-head p{font-size:11px;line-height:1.45}
+  .flight-card{padding:13px;border-radius:16px}
+  .flight-code{font-size:12px}
+  .flight-badge{padding:7px 10px;font-size:11px}
+  .flight-route{grid-template-columns:1fr 38px 1fr;gap:4px;padding:7px 0 12px}
+  .airport strong{font-size:29px}
+  .airport span{font-size:11px;margin-top:5px}
+  .airport b{font-size:14px;margin-top:7px}
+  .plane{font-size:23px}
+  .flight-meta{display:grid;gap:5px;font-size:11px;padding-top:10px}
+}
+
+
+
+@media(max-width:700px){
+  #flightSection{scroll-margin-top:92px}
+  .timeline{scroll-margin-top:92px}
+}
+
+
+/* ===== v10 editable planner ===== */
+.editor-section{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 8px 20px rgba(26,50,74,.05)}
+.editor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.editor-head h2{margin:0;font-size:22px}.editor-head p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.editor-card{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fbfcfd}
+.editor-card h3{margin:0 0 8px;font-size:16px}.editor-card p{margin:4px 0;color:#5e6d79;font-size:13px;line-height:1.55}
+.editor-label{display:block;font-size:12px;font-weight:850;color:#5d6b78;margin:9px 0 5px}
+.editor-input,.editor-textarea{width:100%;border:1px solid #d7e0e7;border-radius:12px;padding:10px 11px;background:#fff;color:var(--ink);outline:none}
+.editor-textarea{min-height:82px;resize:vertical}.editor-input:focus,.editor-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(45,114,174,.10)}
+.editor-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.primary-btn{border:0;background:var(--navy);color:#fff;border-radius:12px;padding:10px 13px;font-weight:850;cursor:pointer}
+.secondary-btn{border:1px solid var(--line);background:#fff;color:#536270;border-radius:12px;padding:9px 11px;font-weight:800;cursor:pointer}
+.danger-btn{border:1px solid #f1c7cf;background:#fff5f6;color:#c7475f;border-radius:12px;padding:8px 11px;font-weight:800;cursor:pointer}
+.info-row{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:9px 0}
+.info-row:first-child{border-top:0;padding-top:0}.info-key{color:#71808d;font-size:12px}.info-val{font-weight:800;text-align:right}
+.check-list{display:grid;gap:8px;margin-top:10px}.check-item{display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.check-item input{width:18px;height:18px;accent-color:var(--navy)}.check-item.done span{text-decoration:line-through;color:#98a3ad}
+.list-empty{padding:18px;text-align:center;color:#8a96a0;border:1px dashed #d5dee6;border-radius:14px}
+.file-row,.memo-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.file-row:first-child,.memo-row:first-child{border-top:0}.file-main{min-width:0}.file-main strong{display:block}.file-main small{display:block;color:var(--muted);margin-top:3px;word-break:break-all}
+.edit-flight-modal{position:fixed;inset:0;background:rgba(17,28,38,.55);display:none;place-items:center;z-index:5000;padding:18px}
+.edit-flight-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.edit-flight-card h2{margin:0 0 14px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.form-grid .full{grid-column:1/-1}
+.small-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+@media(max-width:700px){.editor-section{padding:14px;border-radius:18px}.editor-grid,.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.editor-head h2{font-size:19px}.editor-head p{font-size:12px}}
+
+
+/* ===== v11 top navigation = true tab views ===== */
+body[data-view="overview"] main .timeline,
+body[data-view="overview"] main #flightSection,
+body[data-view="overview"] main #bookingSection,
+body[data-view="overview"] main #filesSection,
+body[data-view="overview"] main #notesSection{display:none!important}
+
+body[data-view="schedule"] main .map-wrap,
+body[data-view="schedule"] main #flightSection,
+body[data-view="schedule"] main #bookingSection,
+body[data-view="schedule"] main #filesSection,
+body[data-view="schedule"] main #notesSection{display:none!important}
+
+body[data-view="flights"] main .map-wrap,
+body[data-view="flights"] main .timeline,
+body[data-view="flights"] main #bookingSection,
+body[data-view="flights"] main #filesSection,
+body[data-view="flights"] main #notesSection{display:none!important}
+
+body[data-view="booking"] main .map-wrap,
+body[data-view="booking"] main .timeline,
+body[data-view="booking"] main #flightSection,
+body[data-view="booking"] main #filesSection,
+body[data-view="booking"] main #notesSection{display:none!important}
+
+body[data-view="files"] main .map-wrap,
+body[data-view="files"] main .timeline,
+body[data-view="files"] main #flightSection,
+body[data-view="files"] main #bookingSection,
+body[data-view="files"] main #notesSection{display:none!important}
+
+body[data-view="notes"] main .map-wrap,
+body[data-view="notes"] main .timeline,
+body[data-view="notes"] main #flightSection,
+body[data-view="notes"] main #bookingSection,
+body[data-view="notes"] main #filesSection{display:none!important}
+
+body:not([data-view="overview"]) .sidebar{display:none!important}
+body:not([data-view="overview"]) .layout{grid-template-columns:1fr}
+
+body[data-view="flights"] #mobileDayTabs,
+body[data-view="booking"] #mobileDayTabs,
+body[data-view="files"] #mobileDayTabs,
+body[data-view="notes"] #mobileDayTabs{display:none!important}
+
+body[data-view="flights"] .layout,
+body[data-view="booking"] .layout,
+body[data-view="files"] .layout,
+body[data-view="notes"] .layout{padding-top:12px}
+
+@media(max-width:700px){
+  body[data-view="flights"] .layout,
+  body[data-view="booking"] .layout,
+  body[data-view="files"] .layout,
+  body[data-view="notes"] .layout{padding-left:10px;padding-right:10px}
+}
+
+
+/* ===== v12 share / export ===== */
+.header-action{width:auto;min-width:48px;padding:8px 9px;display:flex;align-items:center;justify-content:center;gap:5px;font-weight:900}
+.header-action span{font-size:10px;color:#63717e}
+.share-toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:#24313d;color:#fff;padding:11px 14px;border-radius:12px;
+  font-size:12px;font-weight:800;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.2)
+}
+.export-overlay{position:fixed;inset:0;background:rgba(16,28,40,.68);display:none;z-index:8500;place-items:center;padding:16px}
+.export-overlay.show{display:grid}
+.export-card{width:min(1240px,96vw);max-height:92vh;overflow:auto;background:#f4f7fa;border-radius:22px;padding:14px;box-shadow:0 20px 70px rgba(0,0,0,.28)}
+.export-sheet-wrap{width:100%;overflow:auto}
+
+.export-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 3px 12px}
+.export-head strong{font-size:16px}.export-head-actions{display:flex;gap:7px}
+.planner-export{
+  width:1200px;min-height:840px;background:#fff;color:#24313d;
+  border-radius:18px;padding:24px 26px;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;
+}
+.planner-export-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+.export-brand{font-weight:950;color:#174d7d;font-size:18px;letter-spacing:.4px}
+.export-brand span{font-size:10px;color:#7a8792;display:block;margin-top:2px;letter-spacing:1px}
+.planner-export h1{margin:8px 0 0;font-size:30px;line-height:1.15}
+.planner-export-head p{margin:7px 0 0;color:#71808d;font-size:13px}
+.export-badge{padding:8px 11px;border-radius:12px;background:#eaf4fb;color:#174d7d;font-weight:900;font-size:12px;white-space:nowrap}
+.planner-export-grid{display:grid;grid-template-columns:270px 1fr;gap:16px;margin-top:18px}
+.export-side{display:grid;gap:10px;align-content:start}
+.export-side-box{border:1px solid #dfe6ec;border-radius:14px;padding:12px;background:#fbfcfd}
+.export-side-box h3{margin:0 0 9px;font-size:14px}
+.export-side-box>div{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #edf1f4}
+.export-side-box>div:first-of-type{border-top:0}
+.export-side-box small{width:58px;color:#7a8792}
+.export-side-box b{font-size:11px;line-height:1.4}
+.export-side-box p{margin:5px 0;font-size:11px;color:#586a78;line-height:1.4}
+.sum-line{display:flex!important;align-items:center!important;gap:7px!important}
+.sum-line i{width:9px;height:9px;border-radius:50%;display:block;flex:0 0 auto}
+.sum-line b{width:30px}
+.sum-line span{font-size:11px}
+.export-main{min-width:0}
+.export-map-placeholder{
+  position:relative;height:330px;border:1px solid #dfe6ec;border-radius:18px;overflow:hidden;
+  background:
+    radial-gradient(circle at 14% 28%,rgba(90,184,224,.16),transparent 29%),
+    radial-gradient(circle at 76% 70%,rgba(255,245,210,.46),transparent 32%),
+    linear-gradient(135deg,#edf6fb 0%,#f8fbfa 46%,#f5f8fb 100%);
+}
+.export-map-placeholder:before{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(28deg,transparent 48%,rgba(120,145,165,.12) 49%,transparent 50%),
+    linear-gradient(155deg,transparent 44%,rgba(120,145,165,.10) 45%,transparent 46%),
+    repeating-linear-gradient(90deg,transparent 0 58px,rgba(125,150,170,.055) 59px 60px),
+    repeating-linear-gradient(0deg,transparent 0 48px,rgba(125,150,170,.05) 49px 50px);
+}
+.export-map-placeholder:after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:34%;
+  background:linear-gradient(180deg,rgba(159,217,236,0),rgba(159,217,236,.12));
+}
+.map-overlay-title{position:absolute;left:14px;top:12px;background:#fff;padding:8px 11px;border-radius:10px;font-weight:950;font-size:13px;z-index:6;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.map-route-line{position:absolute;height:6px;border-radius:10px;transform-origin:left center;z-index:3;opacity:.84;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.route-blue{left:14%;top:31%;width:68%;background:#174d7d;transform:rotate(15deg)}
+.route-green{left:29%;top:50%;width:42%;background:#4b8f58;transform:rotate(-23deg)}
+.route-pink{left:28%;top:64%;width:44%;background:#e85b77;transform:rotate(-8deg)}
+.route-orange{left:43%;top:74%;width:46%;background:#e88942;transform:rotate(-2deg)}
+.map-node{
+  position:absolute;z-index:7;background:#fff;border:1.5px solid rgba(36,49,61,.14);border-radius:14px;
+  padding:6px 9px;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;
+  box-shadow:0 5px 12px rgba(0,0,0,.08);white-space:nowrap
+}
+.map-node span{font-size:10px}
+.n1{left:8%;top:24%}.n2{left:36%;top:35%}.n3{left:10%;top:58%}.n4{left:44%;top:47%}
+.n5{left:54%;top:61%}.n6{left:70%;top:41%}.n7{left:72%;top:63%}.n8{left:31%;top:78%}.n9{right:4%;bottom:9%}
+.export-caption{display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px}
+.export-caption b{font-size:13px}.export-caption span{font-size:10px;color:#8a96a0}
+.export-day-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dash-day{border:1px solid #dfe6ec;border-radius:13px;overflow:hidden}
+.dash-day-head{color:#fff;padding:8px 10px;display:flex;justify-content:space-between;gap:6px;font-size:11px}
+.dash-day-body{padding:8px 10px}
+.dash-row{display:grid;grid-template-columns:44px 1.45fr .9fr .55fr;gap:6px;padding:5px 0;border-top:1px solid #edf1f4;font-size:9.5px}
+.dash-row:first-child{border-top:0}.dash-row>div:nth-child(2) span{display:block;color:#7a8792;margin-top:2px;font-size:8.5px}
+.dash-time{font-weight:950;color:#174d7d}.dash-foods{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.dash-foods span{padding:4px 6px;border-radius:8px;background:#f5f8fa;font-size:8.5px}
+.export-footer{margin-top:9px;text-align:center;color:#9aa5ad;font-size:9px}
+@media(max-width:700px){
+  .header-action span{display:none}
+  .export-card{padding:8px;border-radius:16px}
+  .export-sheet{width:900px;border-radius:12px;padding:20px}
+  .export-card{overflow:auto}
+}
+
+
+.header-pill{
+  border:1px solid #dfe6ec;background:#fff;color:#28465f;border-radius:999px;
+  padding:9px 12px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap;
+  box-shadow:0 2px 7px rgba(26,50,74,.06)
+}
+.header-pill:hover{background:#f6f9fc}
+.share-action{border-color:#cfe0ef}.export-action{background:#174d7d;color:#fff;border-color:#174d7d}
+@media(max-width:700px){
+  .right{display:flex!important;margin-left:auto;gap:6px}
+  .header-pill{padding:8px 9px;font-size:11px}
+}
+
+</style>
+</head>
+<body>
+
+<div id="supabaseSetup" style="position:fixed;inset:0;z-index:6000;background:#f6f8fb;display:grid;place-items:center;padding:20px;">
+  <div style="width:min(560px,94vw);background:#fff;border:1px solid #dfe6ec;border-radius:24px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.10)">
+    <h2 style="margin:0;color:#174d7d">✈️ 후쿠오카 J플래너 연결</h2>
+    <p style="color:#71808d;line-height:1.6">처음 한 번만 Supabase 주소와 Publishable Key를 넣으면 됩니다.</p>
+    <label style="font-size:12px;font-weight:800;color:#5f6e7a">Project URL
+      <input id="sbUrl" style="width:100%;margin-top:6px;padding:11px;border:1px solid #dfe6ec;border-radius:10px" placeholder="https://xxxxxxxx.supabase.co">
+    </label>
+    <label style="display:block;margin-top:12px;font-size:12px;font-weight:800;color:#5f6e7a">Publishable Key
+      <input id="sbKey" type="password" style="width:100%;margin-top:6px;padding:11px;border:1px solid #dfe6ec;border-radius:10px" placeholder="sb_publishable_...">
+    </label>
+    <button onclick="goLogin()" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">연결</button>
+    <div id="sbStatus" style="margin-top:10px;color:#c94b3b;font-size:12px"></div>
+  </div>
+</div>
+
+<div id="loginLayer" style="position:fixed;inset:0;z-index:5900;background:#f6f8fb;display:none;place-items:center;padding:20px;">
+  <div style="width:min(440px,94vw);background:#fff;border:1px solid #dfe6ec;border-radius:24px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.10)">
+    <h2 style="margin:0;color:#174d7d">🔐 로그인</h2>
+    <p style="color:#71808d">사용자님 또는 남편분 계정으로 로그인하세요.</p>
+    <input id="sbEmail" type="email" placeholder="이메일" style="width:100%;margin-top:8px;padding:11px;border:1px solid #dfe6ec;border-radius:10px">
+    <input id="sbPw" type="password" placeholder="비밀번호" style="width:100%;margin-top:8px;padding:11px;border:1px solid #dfe6ec;border-radius:10px">
+    <button onclick="signIn()" style="margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">로그인</button>
+    <button onclick="resetConnection()" style="margin-top:9px;width:100%;padding:10px;border:1px solid #dfe6ec;border-radius:10px;background:#fff;color:#5f6e7a;font-weight:700;cursor:pointer">↩️ Supabase 연결정보 다시 입력하기</button>
+    <div id="loginStatus" style="margin-top:10px;color:#c94b3b;font-size:12px"></div>
+  </div>
+</div>
+
+
+<div class="export-overlay" id="exportOverlay" onclick="if(event.target===this)closeExportPreview()">
+  <div class="export-card">
+    <div class="export-head">
+      <strong>📤 한 장 요약본 미리보기 · 전체 일정 포함</strong>
+      <div class="export-head-actions">
+        <button class="secondary-btn" onclick="closeExportPreview()">닫기</button>
+        <button class="primary-btn" onclick="downloadExportPng()">💾 저장</button>
+        <button class="primary-btn" onclick="shareExportImage()">📤 이미지 공유</button>
+      </div>
+    </div>
+    <div class="export-sheet-wrap"><div id="exportSheet" class="export-sheet"></div></div>
+  </div>
+</div>
+
+<div class="app">
+<header>
+  <div class="topbar">
+    <div class="logo"><div class="logo-badge">✈️</div><div>FUKUOKA<br><span style="font-size:12px;color:#74818e;font-weight:700">TRIP PLANNER</span></div></div>
+    <div class="nav">
+      <button class="active" data-view="overview">🌏 오버뷰</button>
+      <button data-view="schedule">📋 일정</button>
+      <button data-view="flights">✈️ 항공편</button>
+      <button data-view="booking">🏨 예약/교통</button>
+      <button data-view="files">📎 파일함</button>
+      <button data-view="notes">📝 메모</button>
+    </div>
+    <div class="right">
+  <button class="header-pill share-action" title="공유하기" onclick="sharePlanner()">↗ 공유</button>
+  <button class="header-pill export-action" title="내보내기" onclick="exportPlannerImage()">⇩ 내보내기</button>
+</div>
+  </div>
+</header>
+
+<div class="hero">
+  <h1 class="trip-title">후쿠오카 · 부부 힐링 & 먹방 여행</h1>
+  <div class="subtitle">2026.10.01(목) ~ 10.04(일) · 3박 4일 · 대중교통 중심</div>
+</div>
+<div class="mobile-day-tabs" id="mobileDayTabs">
+  <button class="m1 active" onclick="selectDay('10/1')">10/1 · 도착</button>
+  <button class="m2" onclick="selectDay('10/2')">10/2 · 팜비치</button>
+  <button class="m3" onclick="selectDay('10/3')">10/3 · 쇼핑</button>
+  <button class="m4" onclick="selectDay('10/4')">10/4 · 귀국</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="panel">
+      <h3>여행 정보</h3>
+      <div class="panel-body">
+        <div class="info-row"><span>여행 기간</span><strong>10/1 ~ 10/4</strong></div>
+        <div class="info-row"><span>여행 인원</span><strong>2명</strong></div>
+        <div class="info-row"><span>테마</span><strong>바다 · 먹방 · 쇼핑</strong></div>
+        <div class="info-row"><span>숙소</span><strong>THE LIVELY 1박 + 솔라리아 2박</strong></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>날짜별 요약</h3>
+      <div class="panel-body day-summary">
+        <div class="day-chip" onclick="selectDay('10/1')"><div class="date d1">10/1<br>목</div><div><b>후쿠오카 도착</b><div class="subtitle">THE LIVELY</div></div></div>
+        <div class="day-chip" onclick="selectDay('10/2')"><div class="date d2">10/2<br>금</div><div><b>팜비치 · 텐진</b><div class="subtitle">솔라리아 체크인</div></div></div>
+        <div class="day-chip" onclick="selectDay('10/3')"><div class="date d3">10/3<br>토</div><div><b>쇼핑 · 캐널시티</b><div class="subtitle">나카스 · 야타이</div></div></div>
+        <div class="day-chip" onclick="selectDay('10/4')"><div class="date d4">10/4<br>일</div><div><b>오호리 · 마지막 쇼핑</b><div class="subtitle">21:00 출국</div></div></div>
+      </div>
+    </div>
+    <div class="panel" id="sidebarCheckPanel">
+      <h3>준비 체크</h3>
+      <div class="panel-body">
+        <div style="display:flex;justify-content:space-between"><b id="sidebarCheckCount">0 / 0</b><span class="subtitle">완료</span></div>
+        <div class="progress" style="margin-top:10px"><span id="sidebarCheckProgress" style="width:0%"></span></div>
+        <div class="subtitle" id="sidebarCheckSummary" style="margin-top:10px">체크리스트를 메모 탭에서 추가해보세요.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>메모</h3>
+      <div class="panel-body" id="sidebarMemoList">
+        <div class="subtitle">저장된 메모가 아직 없어요.</div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <button class="map-title map-action" onclick="openFullMap(); return false;">🗺️ 전체 지도 보기</button>
+    </div>
+
+    <div class="timeline">
+      <div class="section-head">
+        <div>
+          <div class="pill" id="selectedDatePill">10/1 목 · 1일차</div>
+          <h2 id="dayTitle" style="margin-top:8px">후쿠오카 도착 & THE LIVELY</h2>
+        </div>
+        <button class="small-btn" onclick="openAddModal()">＋ 일정 추가</button>
+      </div>
+
+      <div class="route-bar" id="routeBar"></div>
+
+      <div id="stayCardMount"></div>
+
+      <div class="schedule-scroll" style="overflow:auto">
+        <table>
+          <thead><tr><th style="width:90px">시간</th><th style="width:150px">일정</th><th style="width:130px">장소</th><th style="width:120px">이동/교통</th><th>식사/카페</th><th style="width:100px">예상비용</th><th>메모</th></tr></thead>
+          <tbody id="scheduleTable"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:22px">🍜 맛집 후보 · 1~3순위</h3>
+      <div class="food-grid" id="foodGrid"></div>
+    </div>
+
+    <section class="flight-section" id="flightSection">
+      <div class="flight-section-head">
+        <div>
+          <div class="flight-eyebrow">✈️ 항공편</div>
+          <h2>출국 · 귀국 항공편</h2>
+          <p>여행 당일 가장 먼저 확인할 항공 정보만 간단하게 모아두었어요.</p>
+        </div>
+      </div>
+
+      <div class="flight-card">
+        <div class="flight-card-top">
+          <span class="flight-code">ZE0643 · 항공편</span>
+          <span style="display:flex;align-items:center;gap:7px">
+<span class="flight-badge depart">출발</span>
+<button class="secondary-btn flight-edit-button" onclick="openFlightEditor('outbound')">✏️ 수정</button>
+</span>
+        </div>
+        <div class="flight-route">
+          <div class="airport">
+            <strong>ICN</strong>
+            <span>인천공항</span>
+            <b>10/1 18:30</b>
+          </div>
+          <div class="plane">✈️</div>
+          <div class="airport right-airport">
+            <strong>FUK</strong>
+            <span>후쿠오카공항</span>
+            <b>10/1 20:00</b>
+          </div>
+        </div>
+        <div class="flight-meta">
+          <span>📌 비행 약 1시간 30분</span>
+          <button class="flight-file-link" onclick="openFlightReservation('outbound')">🎫 예약서 확인</button>
+        </div>
+      </div>
+
+      <div class="flight-card">
+        <div class="flight-card-top">
+          <span class="flight-code">귀국 항공편</span>
+          <span style="display:flex;align-items:center;gap:7px">
+<span class="flight-badge return">귀국</span>
+<button class="secondary-btn flight-edit-button" onclick="openFlightEditor('return')">✏️ 수정</button>
+</span>
+        </div>
+        <div class="flight-route">
+          <div class="airport">
+            <strong>FUK</strong>
+            <span>후쿠오카공항</span>
+            <b>10/4 21:00</b>
+          </div>
+          <div class="plane">✈️</div>
+          <div class="airport right-airport">
+            <strong>ICN</strong>
+            <span>인천공항</span>
+            <b>10/4 22:30</b>
+          </div>
+        </div>
+        <div class="flight-meta">
+          <span>📌 비행 약 1시간 30분</span>
+          <button class="flight-file-link" onclick="openFlightReservation('return')">🎫 예약서 확인</button>
+        </div>
+      </div>
+    
+</section>
+
+<section class="editor-section" id="bookingSection">
+  <div class="editor-head">
+    <div><h2>🏨 예약 / 교통</h2><p>숙소·여행자보험·교통·기타 예약을 한곳에 모아두세요.</p></div>
+    <button class="primary-btn" onclick="toggleEditor('bookingForm')">＋ 예약 추가</button>
+  </div>
+  <div class="editor-grid" id="bookingCards"></div>
+  <div id="bookingForm" style="display:none;margin-top:12px">
+    <div class="editor-card">
+      <h3>새 예약 입력</h3>
+      <label class="editor-label">종류</label>
+      <select class="editor-input" id="bookingType"><option>🏨 숙소</option><option>🛡️ 여행자보험</option><option>🚌 교통</option><option>🎫 관광/티켓</option><option>🍜 식당 예약</option><option>📦 기타</option></select>
+      <label class="editor-label">이름</label><input class="editor-input" id="bookingName" placeholder="예: 여행자보험 / 팜비치 버스">
+      <label class="editor-label">날짜/기간</label><input class="editor-input" id="bookingDate" placeholder="예: 10/1~10/4">
+      <label class="editor-label">예약번호</label><input class="editor-input" id="bookingNo" placeholder="없으면 비워두세요">
+      <label class="editor-label">예약 사이트 / 연락처</label><input class="editor-input" id="bookingContact" placeholder="예: 트립닷컴 / 보험사 고객센터">
+      <label class="editor-label">메모</label><textarea class="editor-textarea" id="bookingMemo" placeholder="체크인 시간, 보장기간, 픽업 장소 등"></textarea>
+      <div class="editor-actions"><button class="primary-btn" onclick="saveBooking()">저장</button><button class="secondary-btn" onclick="toggleEditor('bookingForm')">취소</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="editor-section" id="filesSection">
+  <div class="editor-head">
+    <div><h2>📎 파일함</h2><p>예약서·보험증권·항공권 등의 링크를 모아두는 공간이에요.</p></div>
+    <button class="primary-btn" onclick="toggleEditor('fileForm')">＋ 파일/링크 추가</button>
+  </div>
+  <div id="fileList"></div>
+  <div id="fileForm" style="display:none;margin-top:12px">
+    <div class="editor-card">
+      <h3>파일 링크 추가</h3>
+      <label class="editor-label">파일 이름</label><input class="editor-input" id="fileName" placeholder="예: 항공권 예약확인서">
+      <label class="editor-label">링크</label><input class="editor-input" id="fileUrl" placeholder="https://...">
+      <label class="editor-label">설명</label><input class="editor-input" id="fileMemo" placeholder="예: 출국 항공권">
+      <div class="editor-actions"><button class="primary-btn" onclick="saveFileLink()">저장</button><button class="secondary-btn" onclick="toggleEditor('fileForm')">취소</button></div>
+      <div class="small-note">PDF나 사진 파일 자체를 남편분과 공유하려면 다음 단계에서 Supabase 파일 저장소와 연결하면 됩니다.</div>
+    </div>
+  </div>
+</section>
+
+<section class="editor-section" id="notesSection">
+  <div class="editor-head">
+    <div><h2>📝 메모 / 체크리스트</h2><p>여행 중 떠오르는 메모와 꼭 해야 할 일을 체크해보세요.</p></div>
+  </div>
+  <div class="editor-grid">
+    <div class="editor-card">
+      <h3>📝 자유 메모</h3>
+      <textarea class="editor-textarea" id="quickMemo" placeholder="환전, 쇼핑, 맛집 웨이팅, 남편에게 부탁할 일 등을 적어보세요."></textarea>
+      <div class="editor-actions"><button class="primary-btn" onclick="saveQuickMemo()">메모 저장</button></div>
+      <div id="memoList" style="margin-top:8px"></div>
+    </div>
+    <div class="editor-card">
+      <h3>☑️ 여행 체크리스트</h3>
+      <div style="display:flex;gap:7px">
+        <input class="editor-input" id="checkInput" placeholder="예: 여권 챙기기" onkeydown="if(event.key==='Enter')addChecklist()">
+        <button class="primary-btn" onclick="addChecklist()">＋</button>
+      </div>
+      <div id="checkList" class="check-list"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+</div>
+
+
+
+<div class="edit-flight-modal" id="flightEditModal" onclick="if(event.target===this) closeFlightEditor()">
+  <div class="edit-flight-card">
+    <h2>✈️ 항공편 수정</h2>
+    <input type="hidden" id="flightEditKey">
+    <div class="form-grid">
+      <div><label class="editor-label">항공편명</label><input class="editor-input" id="efCode"></div>
+      <div><label class="editor-label">항공사</label><input class="editor-input" id="efAirline"></div>
+      <div><label class="editor-label">출발 공항</label><input class="editor-input" id="efFrom"></div>
+      <div><label class="editor-label">도착 공항</label><input class="editor-input" id="efTo"></div>
+      <div><label class="editor-label">출발 날짜/시간</label><input class="editor-input" id="efDepart"></div>
+      <div><label class="editor-label">도착 날짜/시간</label><input class="editor-input" id="efArrive"></div>
+      <div><label class="editor-label">출발 터미널</label><input class="editor-input" id="efTerminal"></div>
+      <div><label class="editor-label">좌석</label><input class="editor-input" id="efSeat" placeholder="미정"></div>
+      <div><label class="editor-label">수하물</label><input class="editor-input" id="efBaggage" placeholder="예: 15kg"></div>
+      <div><label class="editor-label">예약번호</label><input class="editor-input" id="efBooking" placeholder="예약번호"></div>
+      <div class="full"><label class="editor-label">메모</label><textarea class="editor-textarea" id="efMemo" placeholder="체크인, 좌석 지정 등"></textarea></div>
+    </div>
+    <div class="editor-actions"><button class="primary-btn" onclick="saveFlightEditor()">저장</button><button class="secondary-btn" onclick="closeFlightEditor()">취소</button></div>
+  </div>
+</div>
+
+<div class="full-map-modal" id="fullMapModal" onclick="if(event.target===this) closeFullMap()">
+  <div class="full-map-card">
+    <div class="full-map-head">
+      <strong>🗺️ 후쿠오카 전체 이동 지도</strong>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#465563;cursor:pointer">
+          <input id="fullMapAllToggle" type="checkbox" onchange="toggleFullMapAll(this.checked)" style="width:18px;height:18px;margin:0">
+          전체 일정 보기
+        </label>
+        <button class="full-map-close" onclick="closeFullMap()" aria-label="닫기">×</button>
+      </div>
+    </div>
+    <div style="position:relative;flex:1;min-height:0">
+      <div id="fullMap"></div>
+      <div class="full-map-legend">
+        <div style="color:#174d7d">● 10/1 · 도착</div>
+        <div style="color:#4b8f58">● 10/2 · 팜비치</div>
+        <div style="color:#e85b77">● 10/3 · 쇼핑</div>
+        <div style="color:#e88942">● 10/4 · 귀국</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="addModal">
+  <div class="modal-card">
+    <h2>📅 일정 추가</h2>
+    <div class="form-grid">
+      <div><label>날짜<select id="fDate"><option>10/1</option><option>10/2</option><option>10/3</option><option>10/4</option></select></label></div>
+      <div><label>시간<input id="fTime" placeholder="12:30"></label></div>
+      <div><label>일정<input id="fTitle" placeholder="점심 식사"></label></div>
+      <div><label>장소<input id="fPlace" placeholder="텐진"></label></div>
+      <div><label>이동/교통<input id="fMove" placeholder="도보 5분"></label></div>
+      <div><label>예상비용<input id="fCost" placeholder="¥3,000"></label></div>
+      <div style="grid-column:1/-1"><label>식사/카페<input id="fFood" placeholder="맛집 이름 또는 후보"></label></div>
+      <div style="grid-column:1/-1"><label>메모<textarea id="fMemo" placeholder="예약 필요 여부, 영업시간, 대체안 등"></textarea></label></div>
+    </div>
+    <div class="modal-actions">
+      <button class="small-btn" onclick="closeAddModal()">취소</button>
+      <button class="primary" onclick="saveItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+function showToast(msg){
+  const old=document.querySelector(".share-toast"); if(old) old.remove();
+  const t=document.createElement("div");t.className="share-toast";t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+
+async function sharePlanner(){
+  const title="후쿠오카 · 부부 힐링 & 먹방 여행";
+  const text="2026.10.01 ~ 10.04 후쿠오카 3박 4일 여행 플래너";
+  const url=location.href;
+  try{
+    if(navigator.share){
+      await navigator.share({title,text,url});
+      return;
+    }
+  }catch(e){
+    if(e && e.name==="AbortError") return;
+  }
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast("플래너 주소를 복사했어요.");
+  }catch(e){
+    showToast("공유 기능은 휴대폰 브라우저의 공유 버튼을 이용해주세요.");
+  }
+}
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+
+function buildExportSheet(){
+  const colors={"10/1":"#174d7d","10/2":"#4b8f58","10/3":"#e85b77","10/4":"#e88942"};
+  const daysOrder=["10/1","10/2","10/3","10/4"];
+
+  const dayRows = daysOrder.map(day=>{
+    const d=days[day], c=colors[day];
+    const rows=d.schedule.slice(0,6).map(r=>`
+      <div class="dash-row">
+        <div class="dash-time">${escapeHtml(r[0])}</div>
+        <div><b>${escapeHtml(r[1])}</b><span>${escapeHtml(r[2])}</span></div>
+        <div>${escapeHtml(r[3])}</div>
+        <div>${escapeHtml(r[5])}</div>
+      </div>`).join("");
+    const foods=d.food.slice(0,3).map(f=>`<span>${escapeHtml(f[0])}순위 · ${escapeHtml(f[1])}</span>`).join("");
+    return `
+      <section class="dash-day">
+        <div class="dash-day-head" style="background:${c}">
+          <strong>${escapeHtml(d.pill)}</strong>
+          <span>${escapeHtml(d.title)}</span>
+        </div>
+        <div class="dash-day-body">
+          ${rows}
+          <div class="dash-foods">${foods}</div>
+        </div>
+      </section>`;
+  }).join("");
+
+  return `
+  <div class="planner-export">
+    <header class="planner-export-head">
+      <div>
+        <div class="export-brand">✈️ FUKUOKA <span>TRIP PLANNER</span></div>
+        <h1>후쿠오카 · 부부 힐링 & 먹방 여행</h1>
+        <p>2026.10.01(목) ~ 10.04(일) · 3박 4일 · 대중교통 중심</p>
+      </div>
+      <div class="export-badge">여행 4일 요약</div>
+    </header>
+
+    <div class="planner-export-grid">
+      <aside class="export-side">
+        <div class="export-side-box">
+          <h3>여행 정보</h3>
+          <div><small>여행 기간</small><b>10/1 ~ 10/4</b></div>
+          <div><small>여행 인원</small><b>2명 (부부)</b></div>
+          <div><small>여행 테마</small><b>바다 · 먹방 · 쇼핑 · 힐링</b></div>
+          <div><small>숙소</small><b>THE LIVELY 1박<br>+ 솔라리아 2박</b></div>
+        </div>
+        <div class="export-side-box">
+          <h3>날짜별 요약</h3>
+          <div class="sum-line"><i style="background:${colors["10/1"]}"></i><b>10/1</b><span>후쿠오카 도착</span></div>
+          <div class="sum-line"><i style="background:${colors["10/2"]}"></i><b>10/2</b><span>팜비치 · 텐진</span></div>
+          <div class="sum-line"><i style="background:${colors["10/3"]}"></i><b>10/3</b><span>쇼핑 · 캐널시티</span></div>
+          <div class="sum-line"><i style="background:${colors["10/4"]}"></i><b>10/4</b><span>오호리 · 귀국</span></div>
+        </div>
+        <div class="export-side-box">
+          <h3>✈️ 항공</h3>
+          <p>10/1 18:30 ICN → FUK 20:00</p>
+          <p>ZE0643 · 이스타항공</p>
+          <p>10/4 21:00 FUK → ICN 22:30</p>
+          <p>ZE0644 · 귀국편</p>
+        </div>
+      </aside>
+
+      <main class="export-main">
+        <div class="export-map-placeholder">
+          <div class="map-overlay-title">🗺️ 전체 이동 경로</div>
+          <div class="map-route-line route-blue"></div>
+          <div class="map-route-line route-green"></div>
+          <div class="map-route-line route-pink"></div>
+          <div class="map-route-line route-orange"></div>
+          <div class="map-node n1">✈️<span>후쿠오카공항</span></div>
+          <div class="map-node n2">🛏️<span>THE LIVELY</span></div>
+          <div class="map-node n3">🌊<span>팜비치</span></div>
+          <div class="map-node n4">🏨<span>솔라리아</span></div>
+          <div class="map-node n5">🛍️<span>텐진</span></div>
+          <div class="map-node n6">🛒<span>캐널시티</span></div>
+          <div class="map-node n7">🍜<span>나카스 · 야타이</span></div>
+          <div class="map-node n8">🌳<span>오호리공원</span></div>
+          <div class="map-node n9">✈️<span>후쿠오카공항</span></div>
+        </div>
+
+        <div class="export-caption">
+          <div><b>오늘의 이동 루트</b><span>지도는 전체 흐름을 한눈에, 아래는 4일 일정 요약을 한눈에</span></div>
+        </div>
+
+        <div class="export-day-grid">
+          ${dayRows}
+        </div>
+        <div class="export-footer">FUKUOKA TRIP PLANNER · 한 장 요약본</div>
+      </main>
+    </div>
+  </div>`;
+}
+
+function buildExportSvg(){
+  const W=1400,H=900;
+  const colors={"10/1":"#2f6594","10/2":"#4f9660","10/3":"#e85c7b","10/4":"#e79642"};
+  const order=["10/1","10/2","10/3","10/4"];
+  const esc=v=>escapeHtml(v);
+
+  let dayCards="";
+  order.forEach((day,idx)=>{
+    const d=days[day], c=colors[day];
+    const x=30+(idx%2)*685;
+    const y=300+Math.floor(idx/2)*285;
+
+    let rows="";
+    d.schedule.slice(0,5).forEach((r,j)=>{
+      const yy=y+58+j*33;
+      rows+=`
+        <line x1="${x+16}" y1="${yy-15}" x2="${x+638}" y2="${yy-15}" stroke="#edf1f4"/>
+        <text x="${x+18}" y="${yy+6}" class="time">${esc(r[0])}</text>
+        <text x="${x+72}" y="${yy+6}" class="bold">${esc(r[1])}</text>
+        <text x="${x+294}" y="${yy+6}" class="small">${esc(r[2])}</text>
+        <text x="${x+472}" y="${yy+6}" class="small">${esc(r[3])}</text>`;
+    });
+
+    const food=d.food.slice(0,3).map(f=>`${esc(f[0])}순위 · ${esc(f[1])}`).join("  ·  ");
+
+    dayCards+=`
+      <g>
+        <rect x="${x}" y="${y}" width="655" height="258" rx="16" fill="#fff" stroke="#dfe6ec"/>
+        <rect x="${x}" y="${y}" width="655" height="38" rx="16" fill="${c}"/>
+        <text x="${x+16}" y="${y+25}" class="dayhead">${esc(d.pill)}</text>
+        <text x="${x+145}" y="${y+25}" class="dayhead">${esc(d.title)}</text>
+        ${rows}
+        <line x1="${x+16}" y1="${y+220}" x2="${x+638}" y2="${y+220}" stroke="#edf1f4"/>
+        <text x="${x+18}" y="${y+242}" class="tiny">🍜 맛집 1~3순위  ·  ${food}</text>
+      </g>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+  <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#f6fafc"/><stop offset="1" stop-color="#f1f6f9"/>
+      </linearGradient>
+      <filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity=".10"/></filter>
+      <style>
+        text{font-family:Arial,'Noto Sans KR',sans-serif;fill:#24313d}
+        .title{font-size:30px;font-weight:900}.sub{font-size:14px;fill:#6d7c88}
+        .boxh{font-size:16px;font-weight:900}.small{font-size:11px;fill:#5d6d79}
+        .tiny{font-size:9px;fill:#75848f}.bold{font-size:11px;font-weight:800}
+        .time{font-size:11px;font-weight:900;fill:#2f6594}.dayhead{font-size:13px;font-weight:900;fill:#fff}
+      </style>
+    </defs>
+
+    <rect width="${W}" height="${H}" fill="url(#pageBg)"/>
+
+    <text x="30" y="38" class="title">✈️ FUKUOKA · TRIP PLANNER</text>
+    <text x="31" y="62" class="sub">후쿠오카 · 부부 힐링 &amp; 먹방 여행 · 2026.10.01(목) ~ 10.04(일) · 3박 4일</text>
+
+    <!-- compact trip summary -->
+    <g filter="url(#shadow)">
+      <rect x="30" y="82" width="1340" height="190" rx="16" fill="#fff" stroke="#dfe6ec"/>
+
+      <text x="50" y="112" class="boxh">여행 정보</text>
+      <text x="50" y="137" class="small">👫 인원</text><text x="118" y="137" class="bold">2명 (부부)</text>
+      <text x="50" y="162" class="small">🎨 테마</text><text x="118" y="162" class="bold">바다 · 먹방 · 쇼핑 · 힐링</text>
+
+      <text x="355" y="112" class="boxh">🏨 숙소</text>
+      <text x="355" y="137" class="small">10/1</text><text x="410" y="137" class="bold">THE LIVELY · 1박</text>
+      <text x="355" y="162" class="small">10/2~4</text><text x="410" y="162" class="bold">솔라리아 · 2박 · 조식</text>
+
+      <text x="715" y="112" class="boxh">✈️ 항공</text>
+      <text x="715" y="137" class="small">출국</text><text x="772" y="137" class="bold">ZE0643 · 10/1 18:30 → 20:00</text>
+      <text x="715" y="162" class="small">귀국</text><text x="772" y="162" class="bold">ZE0644 · 10/4 21:00 → 22:30</text>
+
+      <text x="1115" y="112" class="boxh">📅 핵심 일정</text>
+      <text x="1115" y="138" class="small">10/1 도착</text>
+      <text x="1115" y="160" class="small">10/2 팜비치</text>
+      <text x="1115" y="182" class="small">10/3 쇼핑</text>
+      <text x="1115" y="204" class="small">10/4 오호리 · 귀국</text>
+    </g>
+
+    <text x="30" y="292" class="boxh">📅 4일 일정 한눈에 보기</text>
+    ${dayCards}
+
+    <text x="30" y="885" class="tiny">FUKUOKA TRIP PLANNER · 한 장 요약본</text>
+  </svg>`;
+}
+
+function exportPlannerImage(){
+  const sheet=document.getElementById("exportSheet");
+  const svg=buildExportSvg();
+  sheet.innerHTML=`<div style="display:flex;justify-content:center;background:#eef3f6;border-radius:12px;padding:8px;overflow:auto">
+    <img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}"
+         style="display:block;width:100%;max-width:1400px;height:auto;margin:0 auto;border-radius:10px;background:#fff">
+  </div>`;
+  document.getElementById("exportOverlay").classList.add("show");
+}
+
+function closeExportPreview(){
+  document.getElementById("exportOverlay").classList.remove("show");
+}
+
+async function makeExportCanvas(){
+  const svg=buildExportSvg();
+  const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
+  try{
+    const img=new Image();
+    await new Promise((resolve,reject)=>{
+      img.onload=resolve;
+      img.onerror=reject;
+      img.src=url;
+    });
+    const canvas=document.createElement("canvas");
+    canvas.width=1400*1.5;
+    canvas.height=900*1.5;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#f3f7f9";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    return canvas;
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function downloadExportPng(){
+  try{
+    const canvas=await makeExportCanvas();
+    const a=document.createElement("a");
+    a.download="fukuoka-trip-planner-summary.png";
+    a.href=canvas.toDataURL("image/png");
+    a.click();
+    showToast("한 장 요약 이미지를 저장했어요.");
+  }catch(e){
+    console.error(e);showToast("이미지 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+  }
+}
+
+async function shareExportImage(){
+  try{
+    const canvas=await makeExportCanvas();
+    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
+    const file=new File([blob],"fukuoka-trip-planner-summary.png",{type:"image/png"});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:"후쿠오카 여행 한 장 요약",text:"우리 부부 후쿠오카 여행 일정 요약본",files:[file]});
+      return;
+    }
+    const a=document.createElement("a");
+    a.download="fukuoka-trip-planner-summary.png";a.href=URL.createObjectURL(blob);a.click();
+    showToast("공유 기능이 없어 이미지를 저장했어요.");
+  }catch(e){
+    if(e && e.name!=="AbortError"){console.error(e);showToast("이미지 공유에 실패했어요.");}
+  }
+}
+</script>
+
+<script>
+const stayInfo = {
+ "10/1": {
+   name:"THE LIVELY Fukuoka Hakata",
+   nameJa:"THE LIVELY Fukuoka Hakata",
+   info:"10/1 · 1박 · 더블 스튜디오"
+ },
+ "10/2": {
+   name:"솔라리아 니시테츠 호텔 후쿠오카",
+   nameJa:"ソラリア西鉄ホテル福岡",
+   info:"10/2~10/4 · 2박 · 슈페리어 더블룸 · 조식 포함"
+ },
+ "10/3": {
+   name:"솔라리아 니시테츠 호텔 후쿠오카",
+   nameJa:"ソラリア西鉄ホテル福岡",
+   info:"10/2~10/4 · 2박 · 슈페리어 더블룸 · 조식 포함"
+ },
+ "10/4": {
+   name:"솔라리아 니시테츠 호텔 후쿠오카",
+   nameJa:"ソラリア西鉄ホテル福岡",
+   info:"10/2~10/4 · 2박 · 슈페리어 더블룸 · 조식 포함"
+ }
+};
+
+const days = {
+ "10/1": {
+  title:"후쿠오카 도착 & THE LIVELY", pill:"10/1 목 · 1일차",
+  route:[["20:00","후쿠오카공항"],["21:30","나카스카와바타"],["22:00","THE LIVELY"],["22:30","간단한 야식"],["23:00","숙소 휴식"]],
+  schedule:[
+   ["18:30","인천 출발","인천공항","✈️ 항공편","-", "-", "ZE0643"],
+   ["20:00","후쿠오카 도착","후쿠오카공항","🛬 입국/수하물","-", "-", "20:00 도착"],
+   ["21:30","호텔 이동","THE LIVELY","🚇 지하철","-", "-", "체크인"],
+   ["22:00","간단한 야식","나카스 주변","🚶 도보","맛집 후보 선택", "¥2,000~4,000", "늦은 도착이라 가볍게"],
+   ["23:00","숙소 복귀","THE LIVELY","🚶 도보","-", "-", "취침"]
+  ],
+  food:[
+   ["1","우동/라멘 후보","나카스","¥1,000~1,500","늦은 밤"],
+   ["2","편의점 간식","호텔 주변","¥500~1,000","대안"],
+   ["3","야식 후보","기온","¥1,000~2,000","여행 피곤도 고려"]
+  ]
+ },
+ "10/2": {
+  title:"팜비치 · 바다 · 카페 · 솔라리아", pill:"10/2 금 · 2일차",
+  route:[["08:30","THE LIVELY"],["09:30","솔라리아 짐 보관"],["10:30","팜비치 이동"],["12:00","팜비치 가든"],["14:00","카페/디저트"],["18:00","솔라리아"]],
+  schedule:[
+   ["08:30","기상/준비","THE LIVELY","🚶","-", "-", "천천히 준비"],
+   ["09:30","짐 맡기기","솔라리아","🚶","-", "-", "체크인 가능 여부 확인"],
+   ["10:30","팜비치 이동","텐진","🚌 버스","-", "교통비", "시간표 확인"],
+   ["12:00","바다·점심","팜비치 가든","🌊","점심 후보", "¥3,000~", "사진/산책"],
+   ["14:00","카페·디저트","팜비치","☕","카페 후보", "¥1,000~2,000", "여유롭게"],
+   ["16:30","텐진 복귀","텐진","🚌 버스","-", "교통비", "저녁 전 복귀"],
+   ["18:00","체크인/휴식","솔라리아","🏨","저녁 후보", "-", "조식 포함 숙박"]
+  ],
+  food:[
+   ["1","팜비치 해산물/파스타","팜비치","¥3,000~","바다뷰 우선"],
+   ["2","카페/젤라토","팜비치","¥1,000~2,000","디저트"],
+   ["3","텐진 저녁","텐진","¥3,000~5,000","호텔 복귀 편한 곳"]
+  ]
+ },
+ "10/3": {
+  title:"텐진 쇼핑 · 캐널시티 · 나카스", pill:"10/3 토 · 3일차",
+  route:[["08:30","솔라리아 조식"],["10:00","텐진 쇼핑"],["12:30","다이묘"],["15:00","캐널시티"],["18:00","나카스"],["21:30","솔라리아"]],
+  schedule:[
+   ["08:30","호텔 조식","솔라리아","🥐","호텔 조식","포함","먹방 전 든든하게"],
+   ["10:00","텐진 쇼핑","텐진","🚶","점심 후보", "¥3,000~", "지하상가/백화점"],
+   ["12:30","다이묘·이마이즈미","다이묘","🚶","카페 후보","¥1,000~2,000","편집숍/카페"],
+   ["15:00","캐널시티","캐널시티","🚇/🚶","간식 후보","¥500~2,000","분수쇼 시간 확인"],
+   ["18:00","나카스·야타이","나카스","🚶","저녁 후보","¥3,000~5,000","야경/먹방"],
+   ["21:30","숙소 복귀","솔라리아","🚶","-", "-", "편의점 들르기"]
+  ],
+  food:[
+   ["1","모츠나베","텐진/나카스","¥3,000~5,000","저녁 메인"],
+   ["2","야타이","나카스","¥2,000~3,000","분위기 중심"],
+   ["3","하카타 라멘","나카스","¥1,000~1,500","마지막 2차"]
+  ]
+ },
+ "10/4": {
+  title:"오호리공원 · 마지막 쇼핑 · 귀국", pill:"10/4 일 · 4일차",
+  route:[["08:30","솔라리아 조식"],["10:30","오호리공원"],["12:30","점심"],["14:30","텐진 마지막 쇼핑"],["17:30","짐 찾기"],["18:00","공항"],["21:00","출국"]],
+  schedule:[
+   ["08:30","조식/체크아웃","솔라리아","🥐","호텔 조식","포함","짐 보관"],
+   ["10:30","산책","오호리공원","🚇","카페 후보","¥1,000~2,000","무리하지 않기"],
+   ["12:30","점심","오호리","🚶","점심 후보","¥2,000~4,000","가볍게"],
+   ["14:30","마지막 쇼핑","텐진","🚇","간식 후보","¥500~2,000","선물/기념품"],
+   ["17:30","짐 찾기","솔라리아","🚶","저녁 후보","-", "공항 이동 준비"],
+   ["18:00","공항 이동","후쿠오카공항","🚇","-", "교통비", "21:00 출발"],
+   ["21:00","인천행","후쿠오카공항","✈️","-", "-", "22:30 인천 도착"]
+  ],
+  food:[
+   ["1","오호리 점심","오호리","¥2,000~4,000","공항 전 가볍게"],
+   ["2","텐진 디저트","텐진","¥800~1,500","마지막 간식"],
+   ["3","마지막 라멘","텐진","¥1,000~1,500","공항 가기 전"]
+  ]
+ }
+};
+
+const coords = {
+ "후쿠오카공항":[33.5859,130.4513],
+ "THE LIVELY":[33.5929,130.4078],
+ "솔라리아":[33.5899,130.3987],
+ "팜비치 가든":[33.6245,130.1710],
+ "텐진":[33.5903,130.3996],
+ "캐널시티":[33.5890,130.4102],
+ "나카스":[33.5931,130.4057],
+ "오호리공원":[33.5863,130.3770]
+};
+
+let selected="10/1";
+let map, routeLayer, markers=[];
+let fullMap=null, fullRouteLayer=null, fullMarkers=[];
+let customItems = JSON.parse(localStorage.getItem("fukuoka_custom_items")||"[]");
+
+const dayMapColors={"10/1":"#174d7d","10/2":"#4b8f58","10/3":"#e85b77","10/4":"#e88942"};
+const routeAliases={
+  "후쿠오카공항":"후쿠오카공항","나카스카와바타":"나카스","THE LIVELY":"THE LIVELY",
+  "간단한 야식":"나카스","숙소 휴식":"THE LIVELY","기상/준비":"THE LIVELY",
+  "솔라리아 짐 보관":"솔라리아","텐진":"텐진","팜비치 이동":"팜비치 가든","팜비치 가든":"팜비치 가든",
+  "카페/디저트":"팜비치 가든","팜비치":"팜비치 가든","솔라리아":"솔라리아",
+  "솔라리아 조식":"솔라리아","다이묘":"텐진","다이묘·이마이즈미":"텐진","캐널시티":"캐널시티",
+  "나카스":"나카스","오호리공원":"오호리공원","점심":"오호리공원","공항":"후쿠오카공항"
+};
+
+function resolveCoord(name){
+  const key=routeAliases[name]||name;
+  return coords[key]||null;
+}
+
+function makeDayIcon(color){
+  return L.divIcon({
+    className:'',
+    html:`<div class="map-day-marker" style="background:${color}"></div>`,
+    iconSize:[22,22],iconAnchor:[11,11]
+  });
+}
+
+const mapKoreanNames={
+  "후쿠오카공항":"후쿠오카공항 · 福岡空港",
+  "THE LIVELY":"THE LIVELY · 나카스",
+  "솔라리아":"솔라리아 · 天神",
+  "팜비치 가든":"팜비치 가든 · 海の中道",
+  "텐진":"텐진 · 天神",
+  "캐널시티":"캐널시티 · キャナルシティ",
+  "나카스":"나카스 · 中洲",
+  "오호리공원":"오호리공원 · 大濠公園"
+};
+
+function addKoreanLabel(layer,c,name){
+  const full=mapKoreanNames[name]||name;
+  const parts=full.split(" · ");
+  const ko=parts[0]||full;
+  const ja=parts[1]||"";
+  L.marker(c,{
+    icon:L.divIcon({
+      className:'',
+      html:`<div class="k-map-label"><strong>${ko}</strong>${ja?`<span>${ja}</span>`:''}</div>`,
+      iconSize:null,
+      iconAnchor:[0,28]
+    }),
+    interactive:false,
+    zIndexOffset:200
+  }).addTo(layer);
+}
+
+function initMap(){
+  if(map) return;
+  map=L.map('map',{scrollWheelZoom:false,zoomControl:false,attributionControl:true}).setView([33.59,130.40],12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    subdomains:'abcd',maxZoom:20,
+    attribution:'© OpenStreetMap contributors © CARTO'
+  }).addTo(map);
+  renderMap();
+}
+
+function renderMap(){
+  if(!map) return;
+  if(routeLayer) routeLayer.clearLayers();
+  markers.forEach(m=>m.remove()); markers=[];
+  routeLayer=L.layerGroup().addTo(map);
+
+  const day=selected;
+  const d=days[day], color=dayMapColors[day];
+  const points=d.route.map(r=>resolveCoord(r[1])).filter(Boolean);
+
+  if(points.length>=2){
+    L.polyline(points,{
+      color,weight:5,opacity:.88,lineCap:'round',lineJoin:'round'
+    }).addTo(routeLayer);
+  }
+
+  const labelled=new Set();
+  d.route.forEach(r=>{
+    const c=resolveCoord(r[1]);
+    if(!c) return;
+    const m=L.marker(c,{icon:makeDayIcon(color),zIndexOffset:100}).addTo(routeLayer);
+    markers.push(m);
+
+    const key=routeAliases[r[1]]||r[1];
+    if(!labelled.has(key)){
+      addKoreanLabel(routeLayer,c,key);
+      labelled.add(key);
+    }
+  });
+
+  if(points.length){
+    const bounds=L.latLngBounds(points);
+    // 날짜별 경로가 바뀌면 지도도 같은 날짜의 범위로 확실하게 이동합니다.
+    map.stop();
+    map.flyToBounds(bounds,{padding:[40,40],maxZoom:14,duration:.35});
+  }
+  setTimeout(()=>map.invalidateSize(true),80);
+}
+
+function initFullMap(){
+  if(fullMap) return;
+  const el=document.getElementById('fullMap');
+  if(!el) return;
+
+  fullMap=L.map('fullMap',{
+    scrollWheelZoom:true,
+    zoomControl:true,
+    attributionControl:true,
+    preferCanvas:true
+  }).setView([33.59,130.40],12);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    subdomains:'abcd',maxZoom:20,
+    attribution:'© OpenStreetMap contributors © CARTO'
+  }).addTo(fullMap);
+
+  // 지도는 미리 만들어 두고, 열 때 invalidateSize()만 다시 호출합니다.
+  setTimeout(()=>fullMap.invalidateSize(true),50);
+}
+
+function renderFullMap(showAll){
+  initFullMap();
+  if(!fullMap) return;
+
+  if(fullRouteLayer) fullRouteLayer.clearLayers();
+  fullMarkers.forEach(m=>m.remove()); fullMarkers=[];
+  fullRouteLayer=L.layerGroup().addTo(fullMap);
+
+  const daysToShow=showAll ? Object.keys(days) : [selected];
+  const allPoints=[];
+  const labelled=new Set();
+
+  daysToShow.forEach(day=>{
+    const d=days[day], color=dayMapColors[day];
+    const points=d.route.map(r=>resolveCoord(r[1])).filter(Boolean);
+    points.forEach(p=>allPoints.push(p));
+
+    if(points.length>=2){
+      L.polyline(points,{
+        color,weight:5,opacity:.88,lineCap:'round',lineJoin:'round'
+      }).addTo(fullRouteLayer);
+    }
+
+    d.route.forEach(r=>{
+      const c=resolveCoord(r[1]);
+      if(!c) return;
+      const m=L.marker(c,{icon:makeDayIcon(color),zIndexOffset:100}).addTo(fullRouteLayer);
+      fullMarkers.push(m);
+
+      const key=routeAliases[r[1]]||r[1];
+      if(!labelled.has(key)){
+        addKoreanLabel(fullRouteLayer,c,key);
+        labelled.add(key);
+      }
+    });
+  });
+
+  if(allPoints.length){
+    fullMap.fitBounds(L.latLngBounds(allPoints),{padding:[45,45],maxZoom:14});
+  }
+  setTimeout(()=>fullMap.invalidateSize(true),100);
+}
+
+function openFullMap(){
+  const modal=document.getElementById("fullMapModal");
+  const toggle=document.getElementById("fullMapAllToggle");
+  if(!modal) return;
+
+  if(toggle) toggle.checked=false;
+  initFullMap();
+  modal.classList.add("show");
+
+  // 화면에 표시된 뒤 Leaflet 크기를 다시 계산하고 현재 날짜를 표시
+  setTimeout(()=>{
+    if(fullMap) fullMap.invalidateSize(true);
+    renderFullMap(false);
+  },120);
+}
+
+function toggleFullMapAll(showAll){
+  renderFullMap(showAll);
+}
+
+function closeFullMap(){
+  const modal=document.getElementById("fullMapModal");
+  if(modal) modal.classList.remove("show");
+}
+
+function routeText(p){
+ const t={"후쿠오카공항":"10/1 20:00 도착 · 10/4 21:00 출국","THE LIVELY":"10/1 1박","솔라리아":"10/2~10/4 2박",
+ "팜비치 가든":"10/2 바다·카페·먹방","텐진":"10/2~10/4 쇼핑·숙소","캐널시티":"10/3 쇼핑","나카스":"10/3 저녁·야타이","오호리공원":"10/4 산책"}; return t[p]||"";
+}
+function renderDay(){
+ const d=days[selected];
+  const stay=stayInfo[selected];
+  const stayHtml=stay ? `
+    <div class="stay-card">
+      <div class="stay-card-head">🏨 오늘의 숙소</div>
+      <div class="stay-card-name">${stay.name}</div>
+      <div class="stay-card-ja">${stay.nameJa}</div>
+      <div class="stay-card-info">${stay.info}</div>
+    </div>
+  ` : "";
+  const stayMount=document.getElementById("stayCardMount");
+  if(stayMount) stayMount.innerHTML=stayHtml;
+
+ document.getElementById("selectedDatePill").textContent=d.pill;
+ document.getElementById("dayTitle").textContent=d.title;
+ const rb=document.getElementById("routeBar"); rb.innerHTML="";
+ d.route.forEach((r,i)=>{
+   const s=document.createElement("div"); s.className="route-step";
+   s.innerHTML=`<div class="time">${r[0]}</div><div class="place">${r[1]}</div>`;
+   rb.appendChild(s); if(i<d.route.length-1){const a=document.createElement("div");a.className="arrow";a.textContent="→";rb.appendChild(a);}
+ });
+ const tb=document.getElementById("scheduleTable"); tb.innerHTML="";
+ d.schedule.concat(customItems.filter(x=>x.date===selected).map(x=>[x.time,x.title,x.place,x.move,x.food,x.cost,x.memo])).sort((a,b)=>a[0].localeCompare(b[0])).forEach(r=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td data-label="시간"><strong>${r[0]}</strong></td><td data-label="일정">${r[1]}</td><td data-label="장소">${r[2]}</td><td data-label="이동/교통">${r[3]}</td><td data-label="식사/카페">${r[4]}</td><td data-label="예상비용">${r[5]}</td><td data-label="메모">${r[6]}</td>`;
+  tb.appendChild(tr);
+ });
+ const fg=document.getElementById("foodGrid"); fg.innerHTML="";
+ d.food.forEach((f,i)=>{
+   const div=document.createElement("div"); div.className="food-card";
+   div.innerHTML=`<div><span class="rank ${i===0?'r1':i===1?'r2':'r3'}">${f[0]}</span><span class="food-name">${f[1]}</span></div>
+   <div class="food-meta">📍 ${f[2]} · ${f[3]} · ${f[4]}</div>
+   <div style="margin-top:10px"><button class="small-btn" onclick="alert('맛집 후보를 나중에 실제 가게로 바꿔 넣을 수 있어요!')">📍 지도</button></div>`;
+   fg.appendChild(div);
+ });
+}
+function selectDay(day){
+ selected=day;
+ document.querySelectorAll(".day-chip").forEach(el=>el.style.outline="none");
+ document.querySelectorAll("#mobileDayTabs button").forEach(el=>el.classList.remove("active"));
+ const idx={"10/1":0,"10/2":1,"10/3":2,"10/4":3}[day];
+ const tabs=document.querySelectorAll("#mobileDayTabs button");
+ if(tabs[idx]){
+  tabs[idx].classList.add("active");
+  tabs[idx].scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+}
+
+ // 아래 일정과 지도는 반드시 같은 날짜를 바라보도록 함께 갱신합니다.
+ renderDay();
+
+ if(map){
+   // 모바일에서 Leaflet이 지도 크기를 먼저 다시 계산한 뒤
+   // 선택한 날짜의 경로/핀을 다시 그립니다.
+   setTimeout(()=>{
+     map.invalidateSize(true);
+     renderMap();
+   },120);
+ }
+
+ // 전체 지도 모달이 열려 있다면 체크 상태를 유지한 채 즉시 갱신합니다.
+ const modal=document.getElementById("fullMapModal");
+ const toggle=document.getElementById("fullMapAllToggle");
+ if(modal && modal.classList.contains("show")){
+   setTimeout(()=>renderFullMap(!!(toggle && toggle.checked)),140);
+ }
+}
+function openAddModal(){document.getElementById("addModal").classList.add("show");document.getElementById("fDate").value=selected;}
+function closeAddModal(){document.getElementById("addModal").classList.remove("show");}
+function saveItem(){
+ const x={date:document.getElementById("fDate").value,time:document.getElementById("fTime").value,title:document.getElementById("fTitle").value,place:document.getElementById("fPlace").value,move:document.getElementById("fMove").value,cost:document.getElementById("fCost").value,food:document.getElementById("fFood").value,memo:document.getElementById("fMemo").value};
+ customItems.push(x); localStorage.setItem("fukuoka_custom_items",JSON.stringify(customItems)); closeAddModal(); selected=x.date; renderDay();
+}
+function setActiveView(view){
+ document.body.dataset.view=view;
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
+ if(view==="booking") renderBookings();
+ if(view==="files") renderFiles();
+ if(view==="notes"){renderMemos();renderChecklist();}
+ if(view==="flights") renderFlightCards();
+ if(view==="overview" && map) setTimeout(()=>map.invalidateSize(true),80);
+ if(view==="schedule" && map) setTimeout(()=>map.invalidateSize(true),80);
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{
+ setActiveView(b.dataset.view);
+}));
+window.addEventListener("load",()=>{
+ document.body.dataset.view="overview";
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view==="overview"));
+ if(!map) initMap();
+ renderDay();
+});
+</script>
+
+
+<script>
+/* ===== v10 editable panels ===== */
+const DEFAULT_FLIGHTS={
+ outbound:{code:"ZE0643",airline:"이스타항공",from:"ICN 인천공항",to:"FUK 후쿠오카공항",depart:"10/1 18:30",arrive:"10/1 20:00",terminal:"인천 T2",seat:"",baggage:"",booking:"",memo:""},
+ return:{code:"ZE0644",airline:"이스타항공",from:"FUK 후쿠오카공항",to:"ICN 인천공항",depart:"10/4 21:00",arrive:"10/4 22:30",terminal:"",seat:"",baggage:"",booking:"",memo:""}
+};
+function getFlights(){try{return JSON.parse(localStorage.getItem("fukuoka_flights_v10"))||DEFAULT_FLIGHTS}catch(e){return DEFAULT_FLIGHTS}}
+function saveFlights(x){localStorage.setItem("fukuoka_flights_v10",JSON.stringify(x))}
+function openFlightEditor(key){
+ const x=getFlights()[key];document.getElementById("flightEditKey").value=key;
+ const map={Code:"code",Airline:"airline",From:"from",To:"to",Depart:"depart",Arrive:"arrive",Terminal:"terminal",Seat:"seat",Baggage:"baggage",Booking:"booking",Memo:"memo"};
+ Object.keys(map).forEach(k=>document.getElementById("ef"+k).value=x[map[k]]||"");
+ document.getElementById("flightEditModal").style.display="grid";
+}
+function closeFlightEditor(){document.getElementById("flightEditModal").style.display="none"}
+function saveFlightEditor(){
+ const key=document.getElementById("flightEditKey").value,all=getFlights(),x={};
+ const map={Code:"code",Airline:"airline",From:"from",To:"to",Depart:"depart",Arrive:"arrive",Terminal:"terminal",Seat:"seat",Baggage:"baggage",Booking:"booking",Memo:"memo"};
+ Object.keys(map).forEach(k=>x[map[k]]=document.getElementById("ef"+k).value.trim());
+ all[key]=x;saveFlights(all);closeFlightEditor();renderFlightCards();
+}
+function renderFlightCards(){
+ const all=getFlights(),cards=document.querySelectorAll("#flightSection .flight-card");if(cards.length<2)return;
+ ["outbound","return"].forEach((key,i)=>{
+  const x=all[key],c=cards[i];
+  c.querySelector(".flight-code").textContent=`${x.code||"항공편"} · 항공편`;
+  const a=c.querySelector(".flight-route .airport"),r=c.querySelector(".right-airport");
+  a.querySelector("strong").textContent=(x.from||"").split(" ")[0]||"-";a.querySelector("span").textContent=(x.from||"").replace(/^[^ ]+\s*/,"");a.querySelector("b").textContent=x.depart||"";
+  r.querySelector("strong").textContent=(x.to||"").split(" ")[0]||"-";r.querySelector("span").textContent=(x.to||"").replace(/^[^ ]+\s*/,"");r.querySelector("b").textContent=x.arrive||"";
+  const m=c.querySelectorAll(".flight-meta span");m[0].textContent=x.airline?`✈️ ${x.airline}`:"📌 비행 정보";m[1].textContent=x.baggage?`🧳 수하물 ${x.baggage}`:(x.booking?`🎫 예약번호 ${x.booking}`:"🎫 예약서 확인");
+ });
+}
+function openFlightReservation(key){
+  // 파일함 탭으로 먼저 확실하게 전환합니다.
+  const filesTab=document.querySelector('.nav button[data-view="files"]');
+  if(filesTab){
+    filesTab.click();
+  }else{
+    document.body.dataset.view="files";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  setTimeout(()=>{
+    const files=storeGet("fukuoka_files_v10",[]);
+    const candidates=files.filter(x=>{
+      const t=`${x.name||""} ${x.memo||""}`.toLowerCase();
+      return t.includes("항공") || t.includes("예약") || t.includes("boarding") || t.includes("ticket");
+    });
+
+    if(!candidates.length){
+      showToast("📎 파일함으로 이동했어요. 항공권 예약서를 추가해주세요.");
+      const form=document.getElementById("fileForm");
+      if(form) form.style.display="block";
+      return;
+    }
+
+    // 파일함에 항공권 예약서가 이미 있으면 첫 번째 파일을 바로 엽니다.
+    const first=candidates[0];
+    if(first.url){
+      window.open(first.url,"_blank");
+    }
+  },180);
+}
+
+function toggleEditor(id){const e=document.getElementById(id);e.style.display=e.style.display==="none"?"block":"none"}
+function storeGet(key,fb){try{const v=JSON.parse(localStorage.getItem(key));return v===null?fb:v}catch(e){return fb}}
+function storeSet(key,v){localStorage.setItem(key,JSON.stringify(v))}
+
+const defaultBookings=[
+ {type:"🏨 숙소",name:"THE LIVELY Fukuoka Hakata",date:"10/1 · 1박",no:"",contact:"트립닷컴",memo:"더블 스튜디오"},
+ {type:"🏨 숙소",name:"솔라리아 니시테츠 호텔 후쿠오카",date:"10/2~10/4 · 2박",no:"",contact:"트립닷컴",memo:"슈페리어 더블룸 · 조식 포함"}
+];
+function renderBookings(){
+ const list=storeGet("fukuoka_bookings_v10",defaultBookings),box=document.getElementById("bookingCards");if(!box)return;box.innerHTML="";
+ list.forEach((x,i)=>{const d=document.createElement("div");d.className="editor-card";d.innerHTML=
+ `<h3>${x.type} ${x.name}</h3><div class="info-row"><span class="info-key">날짜/기간</span><span class="info-val">${x.date||"-"}</span></div>
+ <div class="info-row"><span class="info-key">예약번호</span><span class="info-val">${x.no||"미입력"}</span></div>
+ <div class="info-row"><span class="info-key">사이트/연락처</span><span class="info-val">${x.contact||"-"}</span></div><p>${x.memo||""}</p>
+ <div class="editor-actions"><button class="secondary-btn" onclick="editBooking(${i})">✏️ 수정</button><button class="danger-btn" onclick="deleteBooking(${i})">삭제</button></div>`;
+ box.appendChild(d)});
+}
+function saveBooking(){
+ const list=storeGet("fukuoka_bookings_v10",defaultBookings);
+ list.push({type:bookingType.value,name:bookingName.value.trim(),date:bookingDate.value.trim(),no:bookingNo.value.trim(),contact:bookingContact.value.trim(),memo:bookingMemo.value.trim()});
+ storeSet("fukuoka_bookings_v10",list);["bookingName","bookingDate","bookingNo","bookingContact","bookingMemo"].forEach(id=>document.getElementById(id).value="");toggleEditor("bookingForm");renderBookings();
+}
+function editBooking(i){
+ const list=storeGet("fukuoka_bookings_v10",defaultBookings),x=list[i];
+ bookingType.value=x.type||"📦 기타";bookingName.value=x.name||"";bookingDate.value=x.date||"";bookingNo.value=x.no||"";bookingContact.value=x.contact||"";bookingMemo.value=x.memo||"";
+ list.splice(i,1);storeSet("fukuoka_bookings_v10",list);document.getElementById("bookingForm").style.display="block";renderBookings();
+}
+function deleteBooking(i){if(!confirm("이 예약을 삭제할까요?"))return;const list=storeGet("fukuoka_bookings_v10",defaultBookings);list.splice(i,1);storeSet("fukuoka_bookings_v10",list);renderBookings()}
+
+function renderFiles(){
+ const list=storeGet("fukuoka_files_v10",[]),box=document.getElementById("fileList");if(!box)return;
+ if(!list.length){box.innerHTML='<div class="list-empty">아직 등록된 파일/링크가 없어요.<br>항공권·호텔 바우처·보험증권을 추가해보세요.</div>';return}
+ box.innerHTML="";list.forEach((x,i)=>{const d=document.createElement("div");d.className="file-row";d.innerHTML=
+ `<div class="file-main"><strong>📄 ${x.name}</strong><small>${x.memo||""}<br>${x.url}</small></div>
+ <div class="editor-actions"><a class="secondary-btn" href="${x.url}" target="_blank" rel="noopener">열기</a><button class="danger-btn" onclick="deleteFile(${i})">삭제</button></div>`;box.appendChild(d)})
+}
+function saveFileLink(){
+ const list=storeGet("fukuoka_files_v10",[]);if(!fileName.value.trim()||!fileUrl.value.trim()){alert("파일 이름과 링크를 입력해주세요.");return}
+ list.push({name:fileName.value.trim(),url:fileUrl.value.trim(),memo:fileMemo.value.trim()});storeSet("fukuoka_files_v10",list);
+ fileName.value="";fileUrl.value="";fileMemo.value="";toggleEditor("fileForm");renderFiles();
+}
+function deleteFile(i){const list=storeGet("fukuoka_files_v10",[]);list.splice(i,1);storeSet("fukuoka_files_v10",list);renderFiles()}
+
+function renderMemos(){
+ const list=storeGet("fukuoka_memos_v10",[]),box=document.getElementById("memoList");if(!box)return;
+ box.innerHTML=list.length?list.map((x,i)=>`<div class="memo-row"><div class="file-main"><strong>📝 ${x}</strong></div><button class="danger-btn" onclick="deleteMemo(${i})">삭제</button></div>`).join(""):'<div class="list-empty">저장된 메모가 없어요.</div>';
+ renderSidebarSummary();
+}
+function saveQuickMemo(){const v=quickMemo.value.trim();if(!v)return;const list=storeGet("fukuoka_memos_v10",[]);list.unshift(v);storeSet("fukuoka_memos_v10",list);quickMemo.value="";renderMemos();renderSidebarSummary()}
+function deleteMemo(i){const list=storeGet("fukuoka_memos_v10",[]);list.splice(i,1);storeSet("fukuoka_memos_v10",list);renderMemos();renderSidebarSummary()}
+
+const defaultChecks=["여권/신분증 챙기기","여행자보험 가입 확인","항공권·호텔 예약서 저장","엔화/트래블카드 준비","충전기·보조배터리 챙기기"];
+function renderChecklist(){
+ const list=storeGet("fukuoka_checks_v10",defaultChecks.map(x=>({text:x,done:false}))),box=document.getElementById("checkList");if(!box)return;
+ box.innerHTML=list.length?list.map((x,i)=>`<div class="check-item ${x.done?"done":""}"><input type="checkbox" ${x.done?"checked":""} onchange="toggleCheck(${i},this.checked)"><span>${x.text}</span><button class="danger-btn" style="margin-left:auto" onclick="deleteCheck(${i})">삭제</button></div>`).join(""):'<div class="list-empty">체크할 항목이 없어요.</div>';
+ renderSidebarSummary();
+}
+function addChecklist(){const v=checkInput.value.trim();if(!v)return;const list=storeGet("fukuoka_checks_v10",defaultChecks.map(x=>({text:x,done:false})));list.push({text:v,done:false});storeSet("fukuoka_checks_v10",list);checkInput.value="";renderChecklist();renderSidebarSummary()}
+function toggleCheck(i,done){const list=storeGet("fukuoka_checks_v10",defaultChecks.map(x=>({text:x,done:false})));list[i].done=done;storeSet("fukuoka_checks_v10",list);renderChecklist();renderSidebarSummary()}
+function deleteCheck(i){const list=storeGet("fukuoka_checks_v10",defaultChecks.map(x=>({text:x,done:false})));list.splice(i,1);storeSet("fukuoka_checks_v10",list);renderChecklist();renderSidebarSummary()}
+
+function renderSidebarSummary(){
+ const list=storeGet("fukuoka_checks_v10",defaultChecks.map(x=>({text:x,done:false})));
+ const total=list.length, done=list.filter(x=>x.done).length;
+ const count=document.getElementById("sidebarCheckCount");
+ const bar=document.getElementById("sidebarCheckProgress");
+ const summary=document.getElementById("sidebarCheckSummary");
+ if(count) count.textContent=`${done} / ${total}`;
+ if(bar) bar.style.width=(total ? Math.round(done/total*100) : 0)+"%";
+ if(summary){
+   if(total===0) summary.textContent="체크리스트를 메모 탭에서 추가해보세요.";
+   else if(done===0) summary.textContent=`아직 완료한 항목이 없어요. ${total}개를 준비해보세요.`;
+   else if(done<total) summary.textContent=`${total-done}개 남았어요. 천천히 준비하면 돼요.`;
+   else summary.textContent="🎉 준비 체크가 모두 끝났어요!";
+ }
+ const memoBox=document.getElementById("sidebarMemoList");
+ const memos=storeGet("fukuoka_memos_v10",[]);
+ if(memoBox){
+   if(!memos.length){
+     memoBox.innerHTML='<div class="subtitle">저장된 메모가 아직 없어요.</div>';
+   }else{
+     memoBox.innerHTML=memos.slice(0,4).map(x=>`<div style="margin:4px 0">• ${escapeHtml(x)}</div>`).join("");
+   }
+ }
+}
+
+
+window.addEventListener("load",()=>{renderFlightCards();renderBookings();renderFiles();renderMemos();renderChecklist();renderSidebarSummary()});
+</script>
+
+<script>
+let sb = null;
+let sharedSchedule = [];
+let sharedPlaces = [];
+let sharedFoods = [];
+
+function goLogin(){
+  const url=document.getElementById('sbUrl').value.trim();
+  const key=document.getElementById('sbKey').value.trim();
+  if(!url || !key){document.getElementById('sbStatus').textContent='Project URL과 Publishable Key를 넣어주세요.';return;}
+  localStorage.setItem('fukuoka_sb_url',url);
+  localStorage.setItem('fukuoka_sb_key',key);
+  sb=window.supabase.createClient(url,key);
+  document.getElementById('supabaseSetup').style.display='none';
+  document.getElementById('loginLayer').style.display='grid';
+}
+
+async function signIn(){
+  if(!sb){return;}
+  const email=document.getElementById('sbEmail').value.trim();
+  const password=document.getElementById('sbPw').value;
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){document.getElementById('loginStatus').textContent=error.message;return;}
+  document.getElementById('loginLayer').style.display='none';
+  await loadSharedData();
+  if(typeof initMap==='function') initMap();
+  if(typeof renderDay==='function') renderDay();
+}
+
+async function loadSharedData(){
+  if(!sb) return;
+  const s=await sb.from('trip_schedule').select('*').order('trip_date').order('trip_time');
+  if(!s.error) sharedSchedule=s.data||[];
+  const f=await sb.from('food_candidates').select('*').order('trip_date');
+  if(!f.error) sharedFoods=f.data||[];
+  const p=await sb.from('trip_places').select('*');
+  if(!p.error) sharedPlaces=p.data||[];
+}
+
+async function addSharedSchedule(row){
+  if(!sb) return;
+  const {error}=await sb.from('trip_schedule').insert({
+    trip_date:row.date,trip_time:row.time,title:row.title,place:row.place,
+    transport:row.move,food:row.food,cost:row.cost,memo:row.memo
+  });
+  if(error) alert('저장 실패: '+error.message);
+  else { await loadSharedData(); if(typeof renderDay==='function') renderDay(); }
+}
+
+function resetConnection(){
+  localStorage.removeItem('fukuoka_sb_url');
+  localStorage.removeItem('fukuoka_sb_key');
+  sb=null;
+  document.getElementById('loginLayer').style.display='none';
+  document.getElementById('supabaseSetup').style.display='grid';
+  document.getElementById('sbUrl').value='';
+  document.getElementById('sbKey').value='';
+  document.getElementById('sbStatus').textContent='이제 올바른 Project URL과 Publishable Key를 다시 입력하세요.';
+}
+
+function bootSupabase(){
+  const url=localStorage.getItem('fukuoka_sb_url');
+  const key=localStorage.getItem('fukuoka_sb_key');
+  if(url && key){
+    document.getElementById('sbUrl').value=url;
+    document.getElementById('sbKey').value=key;
+    sb=window.supabase.createClient(url,key);
+    sb.auth.getSession().then(({data})=>{
+      if(data.session){
+        document.getElementById('supabaseSetup').style.display='none';
+        loadSharedData().then(()=>{
+ document.body.dataset.view="overview";
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view==="overview"));
+ if(typeof initMap==='function') initMap();
+ if(typeof renderDay==='function') renderDay();
+});
+      }else{
+        document.getElementById('supabaseSetup').style.display='none';
+        document.getElementById('loginLayer').style.display='grid';
+      }
+    });
+  }
+}
+window.addEventListener('load', bootSupabase);
+</script>
+
+</body>
+</html>
