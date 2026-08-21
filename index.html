@@ -630,6 +630,14 @@ body[data-view="notes"] .layout{padding-top:12px}
 }
 
 </style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#174d7d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FUKUOKA Trip Planner">
+
 </head>
 <body>
 
@@ -1892,6 +1900,15 @@ function bootSupabase(){
   }
 }
 window.addEventListener('load', bootSupabase);
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(err => console.warn("SW registration failed:", err));
+  });
+}
 </script>
 
 </body>
