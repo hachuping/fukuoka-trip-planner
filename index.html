@@ -716,14 +716,58 @@ body[data-view="notes"] .layout{padding-top:12px}
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FUKUOKA Trip Planner">
+<meta name="apple-mobile-web-app-title" content="우리들의 여행플래너">
+
+
+<style>
+/* ===== v23.1 첫 연결 화면 모바일 중앙 정렬 ===== */
+#supabaseSetup{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box;
+  padding:16px max(16px, env(safe-area-inset-left)) 16px max(16px, env(safe-area-inset-right)) !important;
+  overflow:auto;
+}
+#supabaseSetup > div{
+  position:relative;
+  left:auto !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  box-sizing:border-box;
+  width:min(560px, calc(100vw - 32px)) !important;
+  max-width:560px !important;
+  margin:0 auto !important;
+}
+#supabaseSetup input{
+  box-sizing:border-box;
+  max-width:100%;
+}
+@media(max-width:700px){
+  #supabaseSetup{
+    min-height:100dvh;
+    min-height:100vh;
+    padding-top:max(16px, env(safe-area-inset-top)) !important;
+    padding-bottom:max(16px, env(safe-area-inset-bottom)) !important;
+  }
+  #supabaseSetup > div{
+    width:calc(100vw - 32px) !important;
+    max-height:calc(100dvh - 32px);
+    overflow:auto;
+    border-radius:22px !important;
+    padding:24px 22px !important;
+  }
+}
+</style>
 
 </head>
 <body>
 
 <div id="supabaseSetup" style="position:fixed;inset:0;z-index:6000;background:#f6f8fb;display:grid;place-items:center;padding:20px;">
   <div style="width:min(560px,94vw);background:#fff;border:1px solid #dfe6ec;border-radius:24px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.10)">
-    <h2 style="margin:0;color:#174d7d">✈️ 후쿠오카 J플래너 연결</h2>
+    <h2 style="margin:0;color:#174d7d">✈️ 우리들의 여행플래너 연결</h2>
     <p style="color:#71808d;line-height:1.6">처음 한 번만 Supabase 주소와 Publishable Key를 넣으면 됩니다.</p>
     <label style="font-size:12px;font-weight:800;color:#5f6e7a">Project URL
       <input id="sbUrl" style="width:100%;margin-top:6px;padding:11px;border:1px solid #dfe6ec;border-radius:10px" placeholder="https://xxxxxxxx.supabase.co">
