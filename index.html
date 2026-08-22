@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FUKUOKA Trip Planner v22</title>
+<title>TRIP PLANNER v23</title>
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
@@ -192,6 +192,17 @@
   #scheduleTable td:last-child::before{display:block;margin-bottom:5px}
   .schedule-actions button{padding:6px 9px;font-size:11px}
 }
+
+
+/* ===== v23 food candidate editor ===== */
+.food-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.food-actions button{font-size:11px}
+.food-editor-modal{position:fixed;inset:0;background:rgba(17,28,38,.55);display:none;place-items:center;z-index:5200;padding:18px}
+.food-editor-modal.show{display:grid}
+.food-editor-card{width:min(620px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.food-editor-card h2{margin:0 0 14px}
+.food-editor-help{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px}
+.food-map-focus{border-color:#cfe0ef;background:#f4f9fd;color:#174d7d}
 
 /* ===== Mobile planner polish ===== */
 .mobile-day-tabs{display:none}
@@ -755,7 +766,7 @@ body[data-view="notes"] .layout{padding-top:12px}
 <div class="app">
 <header>
   <div class="topbar">
-    <div class="logo"><div class="logo-badge">✈️</div><div>FUKUOKA<br><span style="font-size:12px;color:#74818e;font-weight:700">TRIP PLANNER</span></div></div>
+    <div class="logo"><div class="logo-badge">✈️</div><div>TRIP<br><span style="font-size:12px;color:#74818e;font-weight:700">PLANNER</span></div></div>
     <div class="nav">
       <button class="active" data-view="overview">🌏 오버뷰</button>
       <button data-view="schedule">📋 일정</button>
@@ -844,7 +855,7 @@ body[data-view="notes"] .layout{padding-top:12px}
         </table>
       </div>
 
-      <h3 style="margin-top:22px">🍜 맛집 후보 · 1~3순위</h3>
+      <div class="section-head" style="margin-top:22px"><h3 style="margin:0">🍜 맛집 후보 · 1~3순위</h3><button class="small-btn" onclick="openFoodEditor()">＋ 맛집 추가</button></div>
       <div class="food-grid" id="foodGrid"></div>
     </div>
 
@@ -1001,6 +1012,38 @@ body[data-view="notes"] .layout{padding-top:12px}
   </div>
 </div>
 
+
+<div class="food-editor-modal" id="foodEditorModal" onclick="if(event.target===this)closeFoodEditor()">
+  <div class="food-editor-card">
+    <h2 id="foodEditorTitle">🍜 맛집 후보 추가</h2>
+    <input type="hidden" id="foodEditDay">
+    <input type="hidden" id="foodEditIndex" value="">
+    <div class="form-grid">
+      <div>
+        <label>순위</label>
+        <select id="foodRank">
+          <option value="1">1순위</option>
+          <option value="2">2순위</option>
+          <option value="3">3순위</option>
+        </select>
+      </div>
+      <div><label>맛집 이름</label><input id="foodNameInput" placeholder="예: 모츠나베 전문점"></div>
+      <div><label>장소</label><input id="foodPlaceInput" placeholder="예: 텐진"></div>
+      <div><label>예상비용</label><input id="foodCostInput" placeholder="예: ¥3,000~5,000"></div>
+      <div class="full"><label>메모</label><input id="foodMemoInput" placeholder="예: 저녁 메인 · 웨이팅 확인"></div>
+      <div><label>위도</label><input id="foodLatInput" inputmode="decimal" placeholder="예: 33.5903"></div>
+      <div><label>경도</label><input id="foodLngInput" inputmode="decimal" placeholder="예: 130.3996"></div>
+    </div>
+    <div class="food-editor-help">
+      📍 지도 버튼을 정확하게 작동시키려면 위도/경도를 넣어주세요. 텐진·나카스·오호리공원·팜비치처럼 등록된 장소는 자동으로 지도 위치를 찾아갑니다.
+    </div>
+    <div class="modal-actions">
+      <button class="small-btn" onclick="closeFoodEditor()">취소</button>
+      <button class="primary" onclick="saveFoodCandidate()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="full-map-modal" id="fullMapModal" onclick="if(event.target===this) closeFullMap()">
   <div class="full-map-card">
     <div class="full-map-head">
@@ -1093,7 +1136,7 @@ function buildExportSheet(){
         <div>${escapeHtml(r[3])}</div>
         <div>${escapeHtml(r[5])}</div>
       </div>`).join("");
-    const foods=d.food.slice(0,3).map(f=>`<span>${escapeHtml(f[0])}순위 · ${escapeHtml(f[1])}</span>`).join("");
+    const foods=getFoodCandidates(day).slice(0,3).map(f=>`<span>${escapeHtml(f[0])}순위 · ${escapeHtml(f[1])}</span>`).join("");
     return `
       <section class="dash-day">
         <div class="dash-day-head" style="background:${c}">
@@ -1197,7 +1240,7 @@ function buildExportSvg(){
         <text x="${x+472}" y="${yy+6}" class="small">${esc(r[3])}</text>`;
     });
 
-    const food=d.food.slice(0,3).map(f=>`${esc(f[0])}순위 · ${esc(f[1])}`).join("  ·  ");
+    const food=getFoodCandidates(day).slice(0,3).map(f=>`${esc(f[0])}순위 · ${esc(f[1])}`).join("  ·  ");
 
     dayCards+=`
       <g>
@@ -1302,13 +1345,42 @@ async function makeExportCanvas(){
 async function downloadExportPng(){
   try{
     const canvas=await makeExportCanvas();
+    const dataUrl=canvas.toDataURL("image/png");
+    const filename="trip-planner-summary.png";
+
+    // Android WebView에 네이티브 저장 브리지가 있으면 휴대폰에 직접 저장합니다.
+    if(window.Android && typeof window.Android.saveImage==="function"){
+      window.Android.saveImage(dataUrl,filename);
+      showToast("📱 휴대폰에 이미지 저장을 요청했어요.");
+      return;
+    }
+
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(b=>b?resolve(b):reject(new Error("PNG 변환 실패")),"image/png",1);
+    });
+
+    // Web Share가 가능한 환경에서는 갤러리/파일 저장 화면으로 이어질 수 있습니다.
+    const file=new File([blob],filename,{type:"image/png"});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:"여행 한 장 요약",text:"여행 플래너 요약 이미지",files:[file]});
+      showToast("이미지를 공유/저장할 수 있는 화면을 열었어요.");
+      return;
+    }
+
+    // 일반 브라우저 fallback
+    const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
-    a.download="fukuoka-trip-planner-summary.png";
-    a.href=canvas.toDataURL("image/png");
+    a.href=url;
+    a.download=filename;
+    a.style.display="none";
+    document.body.appendChild(a);
     a.click();
-    showToast("한 장 요약 이미지를 저장했어요.");
+    setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},1000);
+    showToast("이미지를 저장했어요. 다운로드 폴더를 확인해주세요.");
   }catch(e){
-    console.error(e);showToast("이미지 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    if(e && e.name==="AbortError") return;
+    console.error(e);
+    showToast("이미지 저장에 실패했어요. 브라우저/앱의 저장 권한을 확인해주세요.");
   }
 }
 
@@ -1768,14 +1840,129 @@ function renderDay(){
   tb.appendChild(tr);
  });
  const fg=document.getElementById("foodGrid"); fg.innerHTML="";
- d.food.forEach((f,i)=>{
-   const div=document.createElement("div"); div.className="food-card";
-   div.innerHTML=`<div><span class="rank ${i===0?'r1':i===1?'r2':'r3'}">${f[0]}</span><span class="food-name">${f[1]}</span></div>
-   <div class="food-meta">📍 ${f[2]} · ${f[3]} · ${f[4]}</div>
-   <div style="margin-top:10px"><button class="small-btn" onclick="alert('맛집 후보를 나중에 실제 가게로 바꿔 넣을 수 있어요!')">📍 지도</button></div>`;
-   fg.appendChild(div);
- });
+ const foodList=getFoodCandidates(selected);
+ if(!foodList.length){
+   fg.innerHTML='<div class="list-empty" style="grid-column:1/-1">등록된 맛집 후보가 없어요. ＋ 맛집 추가로 후보를 넣어보세요.</div>';
+ }else{
+   foodList.forEach((f,i)=>{
+     const rank=Number(f[0])||i+1;
+     const div=document.createElement("div"); div.className="food-card";
+     div.innerHTML=`<div><span class="rank ${rank===1?'r1':rank===2?'r2':'r3'}">${rank}</span><span class="food-name">${escapeHtml(f[1])}</span></div>
+     <div class="food-meta">📍 ${escapeHtml(f[2]||"-")} · ${escapeHtml(f[3]||"-")} · ${escapeHtml(f[4]||"")}</div>
+     <div class="food-actions">
+       <button class="small-btn food-map-focus" onclick="focusFoodOnMap('${selected}',${i})">📍 지도</button>
+       <button class="small-btn" onclick="openFoodEditor('${selected}',${i})">✏️ 수정</button>
+       <button class="danger-btn" onclick="deleteFoodCandidate('${selected}',${i})">삭제</button>
+     </div>`;
+     fg.appendChild(div);
+   });
+ }
 }
+
+/* ===== v23 editable food candidates + map focus ===== */
+const foodStorageKey="fukuoka_food_candidates_v23";
+
+function defaultFoodFor(day){
+  return (days[day]?.food||[]).map(f=>f.slice());
+}
+function getFoodStore(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(foodStorageKey)||"null");
+    return raw && typeof raw==="object" ? raw : {};
+  }catch(e){ return {}; }
+}
+function saveFoodStore(store){
+  localStorage.setItem(foodStorageKey,JSON.stringify(store));
+}
+function getFoodCandidates(day){
+  const store=getFoodStore();
+  if(!Object.prototype.hasOwnProperty.call(store,day)){
+    store[day]=defaultFoodFor(day);
+    saveFoodStore(store);
+  }
+  return Array.isArray(store[day]) ? store[day] : [];
+}
+function openFoodEditor(day=selected,index=""){
+  const list=getFoodCandidates(day);
+  const x=index==="" ? null : list[index];
+  document.getElementById("foodEditorTitle").textContent=x?"🍜 맛집 후보 수정":"🍜 맛집 후보 추가";
+  document.getElementById("foodEditDay").value=day;
+  document.getElementById("foodEditIndex").value=index;
+  document.getElementById("foodRank").value=x?.[0]||String(Math.min(3,list.length+1));
+  document.getElementById("foodNameInput").value=x?.[1]||"";
+  document.getElementById("foodPlaceInput").value=x?.[2]||"";
+  document.getElementById("foodCostInput").value=x?.[3]||"";
+  document.getElementById("foodMemoInput").value=x?.[4]||"";
+  document.getElementById("foodLatInput").value=x?.[5]??"";
+  document.getElementById("foodLngInput").value=x?.[6]??"";
+  document.getElementById("foodEditorModal").classList.add("show");
+}
+function closeFoodEditor(){
+  document.getElementById("foodEditorModal").classList.remove("show");
+}
+function saveFoodCandidate(){
+  const day=document.getElementById("foodEditDay").value||selected;
+  const rawIndex=document.getElementById("foodEditIndex").value;
+  const item=[
+    document.getElementById("foodRank").value,
+    document.getElementById("foodNameInput").value.trim(),
+    document.getElementById("foodPlaceInput").value.trim(),
+    document.getElementById("foodCostInput").value.trim(),
+    document.getElementById("foodMemoInput").value.trim(),
+    document.getElementById("foodLatInput").value.trim(),
+    document.getElementById("foodLngInput").value.trim()
+  ];
+  if(!item[1]){ alert("맛집 이름을 입력해주세요."); return; }
+  const store=getFoodStore();
+  if(!store[day]) store[day]=defaultFoodFor(day);
+  if(rawIndex==="") store[day].push(item);
+  else store[day][Number(rawIndex)]=item;
+  store[day].sort((a,b)=>(Number(a[0])||99)-(Number(b[0])||99));
+  saveFoodStore(store);
+  closeFoodEditor();
+  renderDay();
+  showToast(rawIndex===""?"맛집 후보를 추가했어요.":"맛집 후보를 수정했어요.");
+}
+function deleteFoodCandidate(day,index){
+  if(!confirm("이 맛집 후보를 삭제할까요?")) return;
+  const store=getFoodStore();
+  if(!store[day]) store[day]=defaultFoodFor(day);
+  store[day].splice(index,1);
+  saveFoodStore(store);
+  renderDay();
+  showToast("맛집 후보를 삭제했어요.");
+}
+function getFoodCoordinate(food){
+  const lat=Number(food?.[5]),lng=Number(food?.[6]);
+  if(Number.isFinite(lat)&&Number.isFinite(lng)) return [lat,lng];
+  const place=String(food?.[2]||"").trim();
+  const aliases={"텐진":"텐진","텐진/나카스":"텐진","나카스":"나카스","기온":"나카스","팜비치":"팜비치 가든","팜비치 가든":"팜비치 가든","오호리":"오호리공원","오호리공원":"오호리공원","캐널시티":"캐널시티"};
+  return coords[aliases[place]||place]||null;
+}
+function focusFoodOnMap(day,index){
+  const food=getFoodCandidates(day)[index];
+  if(!food) return;
+  const c=getFoodCoordinate(food);
+  if(!c){
+    openFoodEditor(day,index);
+    showToast("정확한 위치가 없어요. 위도/경도를 입력해주세요.");
+    return;
+  }
+  selected=day;
+  renderDay();
+  setTimeout(()=>{
+    if(!map) initMap();
+    if(!map) return;
+    map.invalidateSize(true);
+    map.flyTo(c,15,{duration:.45});
+    if(window.foodFocusMarker) window.foodFocusMarker.remove();
+    window.foodFocusMarker=L.marker(c,{zIndexOffset:1000})
+      .addTo(map)
+      .bindPopup(`<b>${escapeHtml(food[1])}</b><br>📍 ${escapeHtml(food[2]||"")}`)
+      .openPopup();
+  },160);
+}
+
 function selectDay(day){
  selected=day;
  document.querySelectorAll(".day-chip").forEach(el=>el.style.outline="none");
