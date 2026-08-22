@@ -894,15 +894,19 @@ html,body{overflow-x:hidden;overflow-x:clip;}
 
 </style>
 
-<style id="android-statusbar-fix-v32">
-/* Android WebView: sticky 상단바가 상태바 뒤로 들어가지 않도록 실제 상태바 높이를 사용합니다. */
-:root{--android-status-bar-height:0px}
-header{top:var(--android-status-bar-height,0px) !important}
+<style id="android-statusbar-fix-v34">
+/* Android WebView가 이미 상태바 안전영역을 확보하므로
+   HTML 상단바는 WebView 내부의 정상 위치에서 시작합니다. */
+header{
+  top:0 !important;
+}
 
-/* v33: 모바일에서는 WebView 자체가 상태바 안전영역을 확보하므로
-   relative header에 top 오프셋을 다시 주면 아래 콘텐츠와 겹칠 수 있습니다. */
 @media(max-width:700px){
-  header{top:0 !important}
+  header{
+    position:sticky !important;
+    top:0 !important;
+    z-index:1000;
+  }
 }
 </style>
 
