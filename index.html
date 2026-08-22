@@ -2305,67 +2305,41 @@ async function goLogin(){
     return;
   }
 
-  // 오타가 흔한 부분이라 URL 형식도 먼저 확인합니다.
   if(!/^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/)?$/i.test(url)){
     status.textContent='Project URL 형식이 올바른지 확인해주세요. 예: https://xxxx.supabase.co';
     return;
   }
 
-  const ready=await ensureSupabaseLoaded();
-  if(!ready){
-    status.textContent='Supabase 연결 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.';
-    return;
-  }
+  /*
+   * Android WebView에서는 연결 버튼을 누르는 순간 Supabase의
+   * auth.getSession()까지 실행하면 일부 WebView 환경에서 ANR
+   * (앱이 응답하지 않음)가 발생할 수 있습니다.
+   *
+   * 따라서 여기서는 "Supabase 클라이언트 생성 + 정보 저장"만 하고
+   * 실제 서버 통신은 로그인 버튼을 눌렀을 때 수행합니다.
+   */
+  status.textContent='연결 정보를 확인하는 중이에요…';
 
   try{
-    sb=window.supabase.createClient(url.replace(/\/$/,''),key);
+    const ready=await ensureSupabaseLoaded();
+    if(!ready){
+      status.textContent='Supabase 연결 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.';
+      return;
+    }
 
-    // 실제 서버와 통신 가능한지 확인합니다.
-    const {error}=await sb.auth.getSession();
-    if(error) throw error;
+    sb=window.supabase.createClient(url.replace(/\/$/,''),key);
 
     localStorage.setItem('fukuoka_sb_url',url);
     localStorage.setItem('fukuoka_sb_key',key);
 
+    // 연결 단계에서는 서버 요청을 하지 않고 바로 로그인 화면으로 이동
     document.getElementById('supabaseSetup').style.display='none';
     document.getElementById('loginLayer').style.display='grid';
     status.textContent='';
   }catch(e){
     console.error(e);
-    status.textContent='Supabase 연결에 실패했어요. Project URL과 Publishable Key를 다시 확인해주세요.';
+    status.textContent='연결 준비에 실패했어요. Project URL과 Publishable Key를 다시 확인해주세요.';
   }
-}
-
-async function signIn(){
-  if(!sb){return;}
-  const email=document.getElementById('sbEmail').value.trim();
-  const password=document.getElementById('sbPw').value;
-  const {error}=await sb.auth.signInWithPassword({email,password});
-  if(error){document.getElementById('loginStatus').textContent=error.message;return;}
-  document.getElementById('loginLayer').style.display='none';
-  await loadSharedData();
-  if(typeof initMap==='function') initMap();
-  if(typeof renderDay==='function') renderDay();
-}
-
-async function loadSharedData(){
-  if(!sb) return;
-  const s=await sb.from('trip_schedule').select('*').order('trip_date').order('trip_time');
-  if(!s.error) sharedSchedule=s.data||[];
-  const f=await sb.from('food_candidates').select('*').order('trip_date');
-  if(!f.error) sharedFoods=f.data||[];
-  const p=await sb.from('trip_places').select('*');
-  if(!p.error) sharedPlaces=p.data||[];
-}
-
-async function addSharedSchedule(row){
-  if(!sb) return;
-  const {error}=await sb.from('trip_schedule').insert({
-    trip_date:row.date,trip_time:row.time,title:row.title,place:row.place,
-    transport:row.move,food:row.food,cost:row.cost,memo:row.memo
-  });
-  if(error) alert('저장 실패: '+error.message);
-  else { await loadSharedData(); if(typeof renderDay==='function') renderDay(); }
 }
 
 function resetConnection(){
@@ -2382,31 +2356,28 @@ function resetConnection(){
 async function bootSupabase(){
   const url=localStorage.getItem('fukuoka_sb_url');
   const key=localStorage.getItem('fukuoka_sb_key');
-  if(url && key){
-    document.getElementById('sbUrl').value=url;
-    document.getElementById('sbKey').value=key;
 
-    const ready=await ensureSupabaseLoaded();
-    if(!ready){
-      document.getElementById('sbStatus').textContent='Supabase 연결 기능을 불러오지 못했어요. 연결 버튼을 다시 눌러주세요.';
-      return;
-    }
+  if(!url || !key) return;
 
+  document.getElementById('sbUrl').value=url;
+  document.getElementById('sbKey').value=key;
+
+  const ready=await ensureSupabaseLoaded();
+  if(!ready){
+    document.getElementById('sbStatus').textContent='Supabase 연결 기능을 불러오지 못했어요. 연결 버튼을 다시 눌러주세요.';
+    return;
+  }
+
+  try{
     sb=window.supabase.createClient(url,key);
-    sb.auth.getSession().then(({data})=>{
-      if(data.session){
-        document.getElementById('supabaseSetup').style.display='none';
-        loadSharedData().then(()=>{
- document.body.dataset.view="overview";
- document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view==="overview"));
- if(typeof initMap==='function') initMap();
- if(typeof renderDay==='function') renderDay();
-});
-      }else{
-        document.getElementById('supabaseSetup').style.display='none';
-        document.getElementById('loginLayer').style.display='grid';
-      }
-    });
+
+    // 앱 시작 시에도 auth.getSession()을 호출하지 않습니다.
+    // 로그인 버튼에서만 실제 인증 요청을 수행합니다.
+    document.getElementById('supabaseSetup').style.display='none';
+    document.getElementById('loginLayer').style.display='grid';
+  }catch(e){
+    console.error(e);
+    document.getElementById('sbStatus').textContent='저장된 연결 정보가 올바르지 않아요. 다시 입력해주세요.';
   }
 }
 window.addEventListener('load', bootSupabase);
