@@ -147,6 +147,52 @@
     .map-wrap{height:430px}
   }
 
+
+/* ===== Schedule edit/delete controls ===== */
+.schedule-actions{
+  display:flex;
+  gap:5px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.schedule-actions button{
+  border:1px solid var(--line);
+  background:#fff;
+  color:#536270;
+  border-radius:9px;
+  padding:6px 8px;
+  font-size:11px;
+  font-weight:850;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.schedule-actions .schedule-delete{
+  border-color:#f1c7cf;
+  background:#fff5f6;
+  color:#c7475f;
+}
+.schedule-actions button:hover{filter:brightness(.98)}
+.schedule-source{
+  display:inline-block;
+  margin-left:5px;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#f1f5f8;
+  color:#82909b;
+  font-size:9px;
+  font-weight:800;
+}
+@media(max-width:700px){
+  #scheduleTable td:last-child{
+    display:block;
+    margin-top:6px;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+  }
+  #scheduleTable td:last-child::before{display:block;margin-bottom:5px}
+  .schedule-actions button{padding:6px 9px;font-size:11px}
+}
+
 /* ===== Mobile planner polish ===== */
 .mobile-day-tabs{display:none}
 .day-color-legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
@@ -323,10 +369,33 @@
 
 @media(max-width:700px){
   header{position:relative}
-  .topbar{padding:10px 12px}
-  .logo{min-width:0}
-  .nav{overflow-x:auto;flex-wrap:nowrap;padding:0 4px 8px}
+  .topbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto auto;
+    align-items:center;
+    gap:7px 8px;
+    padding:9px 12px 7px;
+  }
+  .logo{min-width:0;grid-column:1;grid-row:1}
+  .right{
+    display:flex!important;
+    grid-column:2;
+    grid-row:1;
+    margin-left:0;
+    gap:5px;
+  }
+  .nav{
+    grid-column:1/-1;
+    grid-row:2;
+    width:100%;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding:0 2px 5px;
+  }
   .nav button{white-space:nowrap}
+  .header-pill{padding:7px 9px;font-size:10px;border-radius:10px}
+  .header-action span{display:none}
 }
 
 
@@ -770,7 +839,7 @@ body[data-view="notes"] .layout{padding-top:12px}
 
       <div class="schedule-scroll" style="overflow:auto">
         <table>
-          <thead><tr><th style="width:90px">시간</th><th style="width:150px">일정</th><th style="width:130px">장소</th><th style="width:120px">이동/교통</th><th>식사/카페</th><th style="width:100px">예상비용</th><th>메모</th></tr></thead>
+          <thead><tr><th style="width:90px">시간</th><th style="width:150px">일정</th><th style="width:130px">장소</th><th style="width:120px">이동/교통</th><th>식사/카페</th><th style="width:100px">예상비용</th><th>메모</th><th style="width:110px">관리</th></tr></thead>
           <tbody id="scheduleTable"></tbody>
         </table>
       </div>
@@ -958,7 +1027,7 @@ body[data-view="notes"] .layout{padding-top:12px}
 
 <div class="modal" id="addModal">
   <div class="modal-card">
-    <h2>📅 일정 추가</h2>
+    <h2 id="addModalTitle">📅 일정 추가</h2>
     <div class="form-grid">
       <div><label>날짜<select id="fDate"><option>10/1</option><option>10/2</option><option>10/3</option><option>10/4</option></select></label></div>
       <div><label>시간<input id="fTime" placeholder="12:30"></label></div>
@@ -971,7 +1040,7 @@ body[data-view="notes"] .layout{padding-top:12px}
     </div>
     <div class="modal-actions">
       <button class="small-btn" onclick="closeAddModal()">취소</button>
-      <button class="primary" onclick="saveItem()">저장</button>
+      <button class="primary" id="saveScheduleBtn" onclick="saveItem()">저장</button>
     </div>
   </div>
 </div>
@@ -1017,7 +1086,7 @@ function buildExportSheet(){
 
   const dayRows = daysOrder.map(day=>{
     const d=days[day], c=colors[day];
-    const rows=d.schedule.slice(0,6).map(r=>`
+    const rows=getScheduleRows(day).slice(0,6).map(r=>`
       <div class="dash-row">
         <div class="dash-time">${escapeHtml(r[0])}</div>
         <div><b>${escapeHtml(r[1])}</b><span>${escapeHtml(r[2])}</span></div>
@@ -1118,7 +1187,7 @@ function buildExportSvg(){
     const y=300+Math.floor(idx/2)*285;
 
     let rows="";
-    d.schedule.slice(0,5).forEach((r,j)=>{
+    getScheduleRows(day).slice(0,5).forEach((r,j)=>{
       const yy=y+58+j*33;
       rows+=`
         <line x1="${x+16}" y1="${yy-15}" x2="${x+638}" y2="${yy-15}" stroke="#edf1f4"/>
@@ -1372,6 +1441,96 @@ let selected="10/1";
 let map, routeLayer, markers=[];
 let fullMap=null, fullRouteLayer=null, fullMarkers=[];
 let customItems = JSON.parse(localStorage.getItem("fukuoka_custom_items")||"[]");
+customItems = customItems.map((x,i)=>({...x,id:x.id||`custom-${Date.now()}-${i}`}));
+let scheduleOverrides = JSON.parse(localStorage.getItem("fukuoka_schedule_overrides")||"{}");
+let scheduleDeleted = JSON.parse(localStorage.getItem("fukuoka_schedule_deleted")||"{}");
+let editingSchedule = null;
+
+function scheduleToObject(r){
+  return {time:r[0]||"",title:r[1]||"",place:r[2]||"",move:r[3]||"",food:r[4]||"",cost:r[5]||"",memo:r[6]||""};
+}
+function objectToSchedule(x){
+  return [x.time||"",x.title||"",x.place||"",x.move||"",x.food||"",x.cost||"",x.memo||""];
+}
+function getScheduleRows(day){
+  const base = (days[day]?.schedule||[]).map((r,index)=>{
+    const key=`${day}-${index}`;
+    if(scheduleDeleted[key]) return null;
+    const override=scheduleOverrides[key];
+    return {
+      row:override ? objectToSchedule(override) : r.slice(),
+      type:"base",
+      key,
+      index,
+      label:override ? "수정됨" : ""
+    };
+  }).filter(Boolean);
+
+  const custom = customItems
+    .filter(x=>x.date===day)
+    .map(x=>({
+      row:objectToSchedule(x),
+      type:"custom",
+      key:x.id,
+      index:-1,
+      label:"추가됨"
+    }));
+
+  return base.concat(custom).sort((a,b)=>(a.row[0]||"").localeCompare(b.row[0]||""));
+}
+function persistScheduleEdits(){
+  localStorage.setItem("fukuoka_schedule_overrides",JSON.stringify(scheduleOverrides));
+  localStorage.setItem("fukuoka_schedule_deleted",JSON.stringify(scheduleDeleted));
+}
+function openEditSchedule(type,key,day){
+  let x;
+  if(type==="base"){
+    const parts=key.split("-");
+    const index=Number(parts[parts.length-1]);
+    const override=scheduleOverrides[key];
+    x=override ? {...override} : scheduleToObject(days[day].schedule[index]);
+  }else{
+    x=customItems.find(v=>v.id===key);
+  }
+  if(!x) return;
+  editingSchedule={type,key,day};
+  document.getElementById("addModalTitle").textContent="✏️ 일정 수정";
+  document.getElementById("saveScheduleBtn").textContent="수정 저장";
+  document.getElementById("fDate").value=day;
+  document.getElementById("fTime").value=x.time||"";
+  document.getElementById("fTitle").value=x.title||"";
+  document.getElementById("fPlace").value=x.place||"";
+  document.getElementById("fMove").value=x.move||"";
+  document.getElementById("fCost").value=x.cost||"";
+  document.getElementById("fFood").value=x.food||"";
+  document.getElementById("fMemo").value=x.memo||"";
+  document.getElementById("addModal").classList.add("show");
+}
+function deleteScheduleItem(type,key,day){
+  const label=type==="base" ? "기존 일정" : "추가한 일정";
+  if(!confirm(`이 ${label}을 삭제할까요?`)) return;
+  if(type==="base"){
+    scheduleDeleted[key]=true;
+    delete scheduleOverrides[key];
+  }else{
+    customItems=customItems.filter(x=>x.id!==key);
+    localStorage.setItem("fukuoka_custom_items",JSON.stringify(customItems));
+  }
+  persistScheduleEdits();
+  renderDay();
+  showToast("일정을 삭제했어요.");
+}
+function resetScheduleModal(){
+  editingSchedule=null;
+  const title=document.getElementById("addModalTitle");
+  const btn=document.getElementById("saveScheduleBtn");
+  if(title) title.textContent="📅 일정 추가";
+  if(btn) btn.textContent="저장";
+  ["fTime","fTitle","fPlace","fMove","fCost","fFood","fMemo"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+}
+
 
 const dayMapColors={"10/1":"#174d7d","10/2":"#4b8f58","10/3":"#e85b77","10/4":"#e88942"};
 const routeAliases={
@@ -1589,9 +1748,23 @@ function renderDay(){
    rb.appendChild(s); if(i<d.route.length-1){const a=document.createElement("div");a.className="arrow";a.textContent="→";rb.appendChild(a);}
  });
  const tb=document.getElementById("scheduleTable"); tb.innerHTML="";
- d.schedule.concat(customItems.filter(x=>x.date===selected).map(x=>[x.time,x.title,x.place,x.move,x.food,x.cost,x.memo])).sort((a,b)=>a[0].localeCompare(b[0])).forEach(r=>{
+ getScheduleRows(selected).forEach(item=>{
+  const r=item.row;
   const tr=document.createElement("tr");
-  tr.innerHTML=`<td data-label="시간"><strong>${r[0]}</strong></td><td data-label="일정">${r[1]}</td><td data-label="장소">${r[2]}</td><td data-label="이동/교통">${r[3]}</td><td data-label="식사/카페">${r[4]}</td><td data-label="예상비용">${r[5]}</td><td data-label="메모">${r[6]}</td>`;
+  tr.innerHTML=`
+    <td data-label="시간"><strong>${escapeHtml(r[0])}</strong></td>
+    <td data-label="일정">${escapeHtml(r[1])}${item.label?`<span class="schedule-source">${item.label}</span>`:""}</td>
+    <td data-label="장소">${escapeHtml(r[2])}</td>
+    <td data-label="이동/교통">${escapeHtml(r[3])}</td>
+    <td data-label="식사/카페">${escapeHtml(r[4])}</td>
+    <td data-label="예상비용">${escapeHtml(r[5])}</td>
+    <td data-label="메모">${escapeHtml(r[6])}</td>
+    <td data-label="관리">
+      <div class="schedule-actions">
+        <button onclick="openEditSchedule('${item.type}','${item.key}','${selected}')">✏️ 수정</button>
+        <button class="schedule-delete" onclick="deleteScheduleItem('${item.type}','${item.key}','${selected}')">🗑️ 삭제</button>
+      </div>
+    </td>`;
   tb.appendChild(tr);
  });
  const fg=document.getElementById("foodGrid"); fg.innerHTML="";
@@ -1633,11 +1806,50 @@ function selectDay(day){
    setTimeout(()=>renderFullMap(!!(toggle && toggle.checked)),140);
  }
 }
-function openAddModal(){document.getElementById("addModal").classList.add("show");document.getElementById("fDate").value=selected;}
-function closeAddModal(){document.getElementById("addModal").classList.remove("show");}
+function openAddModal(){resetScheduleModal();document.getElementById("fDate").value=selected;document.getElementById("addModal").classList.add("show");}
+function closeAddModal(){document.getElementById("addModal").classList.remove("show");resetScheduleModal();}
 function saveItem(){
- const x={date:document.getElementById("fDate").value,time:document.getElementById("fTime").value,title:document.getElementById("fTitle").value,place:document.getElementById("fPlace").value,move:document.getElementById("fMove").value,cost:document.getElementById("fCost").value,food:document.getElementById("fFood").value,memo:document.getElementById("fMemo").value};
- customItems.push(x); localStorage.setItem("fukuoka_custom_items",JSON.stringify(customItems)); closeAddModal(); selected=x.date; renderDay();
+ const x={
+  date:document.getElementById("fDate").value,
+  time:document.getElementById("fTime").value.trim(),
+  title:document.getElementById("fTitle").value.trim(),
+  place:document.getElementById("fPlace").value.trim(),
+  move:document.getElementById("fMove").value.trim(),
+  cost:document.getElementById("fCost").value.trim(),
+  food:document.getElementById("fFood").value.trim(),
+  memo:document.getElementById("fMemo").value.trim()
+ };
+ if(!x.time || !x.title){
+   alert("시간과 일정은 입력해주세요.");
+   return;
+ }
+
+ if(editingSchedule){
+   const meta={...editingSchedule};
+   if(meta.type==="base"){
+     scheduleOverrides[meta.key]={
+       time:x.time,title:x.title,place:x.place,move:x.move,
+       food:x.food,cost:x.cost,memo:x.memo
+     };
+     delete scheduleDeleted[meta.key];
+     persistScheduleEdits();
+   }else{
+     const idx=customItems.findIndex(v=>v.id===meta.key);
+     if(idx>=0){
+       customItems[idx]={...customItems[idx],...x};
+       localStorage.setItem("fukuoka_custom_items",JSON.stringify(customItems));
+     }
+   }
+   selected=x.date;
+ }else{
+   x.id=`custom-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+   customItems.push(x);
+   localStorage.setItem("fukuoka_custom_items",JSON.stringify(customItems));
+   selected=x.date;
+ }
+ closeAddModal();
+ renderDay();
+ showToast(editingSchedule ? "일정을 수정했어요." : "일정을 추가했어요.");
 }
 function setActiveView(view){
  document.body.dataset.view=view;
