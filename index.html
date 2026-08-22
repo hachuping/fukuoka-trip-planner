@@ -2723,40 +2723,96 @@ async function signIn(){
   const email=(document.getElementById('sbEmail')?.value||'').trim();
   const password=document.getElementById('sbPw')?.value||'';
   const status=document.getElementById('loginStatus');
+  const loginBtn=document.querySelector('#loginLayer button[onclick*="signIn"]');
 
   if(!email || !password){
     if(status) status.textContent='이메일과 비밀번호를 입력해주세요.';
     return;
   }
 
+  if(loginBtn){
+    loginBtn.disabled=true;
+    loginBtn.style.opacity='0.65';
+    loginBtn.textContent='로그인 중…';
+  }
+
   try{
+    if(status) status.textContent='로그인 연결을 준비하고 있어요…';
+
+    // Android WebView에서는 CDN 로딩이 늦을 수 있으므로
+    // 로그인 버튼을 누른 순간 Supabase 라이브러리를 확실히 준비합니다.
+    const ready = await ensureSupabaseLoaded();
+    if(!ready){
+      throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.');
+    }
+
+    const url=(localStorage.getItem('fukuoka_sb_url')||'').trim().replace(/\/$/,'');
+    const key=(localStorage.getItem('fukuoka_sb_key')||'').trim();
+    if(!url || !key){
+      throw new Error('Supabase 연결정보가 없습니다. 연결정보를 다시 입력해주세요.');
+    }
+
     if(!sb){
-      const url=localStorage.getItem('fukuoka_sb_url');
-      const key=localStorage.getItem('fukuoka_sb_key');
-      if(!url || !key) throw new Error('Supabase 연결정보가 없습니다.');
-      if(!window.supabase || typeof window.supabase.createClient!=='function'){
-        throw new Error('Supabase 라이브러리를 아직 불러오지 못했습니다.');
-      }
       sb=window.supabase.createClient(url,key);
     }
 
     if(status) status.textContent='로그인 중이에요…';
-    const {error}=await sb.auth.signInWithPassword({email,password});
+
+    // 네트워크가 멈춰서 버튼이 무한 대기하지 않도록 20초 제한
+    const loginPromise=sb.auth.signInWithPassword({email,password});
+    const timeoutPromise=new Promise((_,reject)=>
+      setTimeout(()=>reject(new Error('LOGIN_TIMEOUT')),20000)
+    );
+
+    const result=await Promise.race([loginPromise,timeoutPromise]);
+    const error=result?.error;
     if(error) throw error;
 
-    if(document.getElementById('loginLayer')){
-      document.getElementById('loginLayer').style.display='none';
-    }
+    if(status) status.textContent='로그인되었습니다. 여행 데이터를 불러오는 중…';
+
+    const loginLayer=document.getElementById('loginLayer');
+    if(loginLayer) loginLayer.style.display='none';
+
     if(typeof loadSharedData==='function'){
-      try{ await loadSharedData(); }catch(e){ console.warn('공유 데이터 불러오기 실패:',e); }
+      try{
+        await Promise.race([
+          loadSharedData(),
+          new Promise(resolve=>setTimeout(resolve,10000))
+        ]);
+      }catch(e){
+        console.warn('공유 데이터 불러오기 실패:',e);
+      }
     }
+
     if(typeof renderAll==='function'){
       try{ renderAll(); }catch(e){ console.warn('화면 새로고침 실패:',e); }
     }
+
     if(status) status.textContent='';
+
   }catch(e){
-    console.error(e);
-    if(status) status.textContent='로그인에 실패했어요. 이메일/비밀번호와 Supabase 설정을 확인해주세요.';
+    console.error('signIn error:',e);
+
+    let message='로그인에 실패했어요.';
+    if(e && e.message==='LOGIN_TIMEOUT'){
+      message='로그인 서버 응답이 늦어요. 인터넷 연결을 확인하고 다시 눌러주세요.';
+    }else if(e && e.message){
+      const m=String(e.message);
+      if(m.includes('Invalid login credentials')){
+        message='이메일 또는 비밀번호가 올바르지 않아요.';
+      }else if(m.includes('Email not confirmed')){
+        message='이메일 인증이 아직 완료되지 않았어요.';
+      }else if(m.includes('Supabase 라이브러리')){
+        message=m;
+      }
+    }
+    if(status) status.textContent=message;
+  }finally{
+    if(loginBtn){
+      loginBtn.disabled=false;
+      loginBtn.style.opacity='1';
+      loginBtn.textContent='로그인';
+    }
   }
 }
 
