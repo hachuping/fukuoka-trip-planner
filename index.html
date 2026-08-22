@@ -709,6 +709,95 @@ body[data-view="notes"] .layout{padding-top:12px}
   .header-pill{padding:8px 9px;font-size:11px}
 }
 
+
+/* ===== v24 여행 설정 ===== */
+.settings-action{border-color:#d8e3ec}
+.trip-settings-modal{
+  position:fixed;inset:0;z-index:9100;display:none;place-items:center;
+  background:rgba(16,28,40,.68);padding:14px;overflow:auto
+}
+.trip-settings-modal.show{display:grid}
+.trip-settings-card{
+  width:min(760px,96vw);max-height:92vh;overflow:auto;background:#fff;
+  border-radius:22px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.28)
+}
+.trip-settings-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.settings-eyebrow{font-size:11px;font-weight:950;color:#174d7d;letter-spacing:1px}
+.trip-settings-head h2{margin:5px 0 4px;font-size:23px}
+.trip-settings-head p{margin:0;color:#71808d;font-size:12px;line-height:1.5}
+.trip-settings-close{
+  width:38px;height:38px;border:1px solid #dfe6ec;border-radius:50%;
+  background:#fff;font-size:25px;color:#667684;cursor:pointer
+}
+.settings-section{margin-top:18px;padding:16px;border:1px solid #e3e9ee;border-radius:16px;background:#fbfcfd}
+.settings-section h3{margin:0 0 10px;font-size:15px}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settings-grid label,.trip-day-row label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:850;color:#5f6e7a}
+.settings-grid input,.trip-day-row input{
+  width:100%;padding:11px;border:1px solid #dfe6ec;border-radius:10px;background:#fff;
+  font:inherit;font-size:13px;color:#24313d;outline:none
+}
+.settings-grid input:focus,.trip-day-row input:focus{border-color:#6fa5d0;box-shadow:0 0 0 3px rgba(45,114,174,.10)}
+.settings-grid .full{grid-column:1/-1}
+.settings-section-title p{margin:3px 0 0;color:#7a8792;font-size:11px}
+.trip-day-settings{display:grid;gap:9px;margin-top:12px}
+.trip-day-row{
+  display:grid;grid-template-columns:95px 1fr 1.6fr;gap:9px;align-items:end;
+  padding:10px;border:1px solid #e7edf1;border-radius:12px;background:#fff
+}
+.trip-day-row .day-number{
+  font-size:13px;font-weight:950;color:#174d7d;padding-bottom:10px
+}
+.settings-actions-section{display:flex;gap:8px;flex-wrap:wrap}
+.danger-outline-btn{
+  border:1px solid #e7b7bf;background:#fff5f6;color:#b34355;border-radius:10px;
+  padding:10px 12px;font-weight:900;cursor:pointer
+}
+@media(max-width:700px){
+  .trip-settings-card{width:100%;max-height:94vh;padding:16px;border-radius:20px}
+  .settings-grid{grid-template-columns:1fr}
+  .settings-grid .full{grid-column:auto}
+  .trip-day-row{grid-template-columns:1fr}
+  .trip-day-row .day-number{padding-bottom:0}
+  .settings-actions-section{display:grid}
+  .settings-actions-section button{width:100%}
+}
+
+
+/* ===== v24 세로 내보내기 ===== */
+.vertical-export-root{
+  width:900px;background:#f6f8fb;color:#24313d;padding:34px 34px 40px;
+  font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;
+}
+.vexp-title{font-size:20px;font-weight:950;color:#174d7d;letter-spacing:.5px}
+.vertical-export-root h1{font-size:34px;line-height:1.25;margin:10px 0 6px}
+.vexp-sub{margin:0;color:#71808d;font-size:16px}
+.vexp-info{
+  margin-top:18px;background:#fff;border:1px solid #dfe6ec;border-radius:16px;
+  padding:16px;display:grid;grid-template-columns:1fr 2fr;gap:10px
+}
+.vexp-info div{display:flex;gap:10px}.vexp-info span{color:#7a8792;min-width:55px}.vexp-info b{font-size:14px}
+.vexp-section-title{font-size:20px;font-weight:950;margin:24px 0 10px}
+.vexp-day{background:#fff;border:1px solid #dfe6ec;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.vexp-day-head{color:#fff;padding:13px 16px;display:flex;gap:14px;align-items:center}
+.vexp-day-head b{font-size:15px;white-space:nowrap}.vexp-day-head span{font-size:15px;font-weight:850}
+.vexp-body{padding:12px 16px 16px}
+.vexp-table-head,.vexp-row{
+  display:grid;grid-template-columns:80px 1.6fr 1fr 1.15fr;gap:12px;align-items:start
+}
+.vexp-table-head{font-size:11px;font-weight:950;color:#8a96a0;padding:4px 0 7px}
+.vexp-row{border-top:1px solid #edf1f4;padding:11px 0;font-size:13px}
+.vexp-time{font-weight:950;color:#174d7d}.vexp-main b{display:block;font-size:14px}.vexp-main span{display:block;color:#7a8792;margin-top:3px}
+.vexp-move,.vexp-note{color:#5d6d79;line-height:1.4}.vexp-note{white-space:normal}
+.vexp-food-head{font-size:13px;font-weight:950;margin-top:12px;padding-top:11px;border-top:1px dashed #dfe6ec}
+.vexp-food-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.vexp-food{background:#f7fafc;border-radius:10px;padding:9px}.vexp-food b{color:#b88418;font-size:11px;margin-right:5px}.vexp-food span{font-weight:850;font-size:12px}.vexp-food small{display:block;color:#7a8792;font-size:10px;margin-top:4px}
+.vexp-empty{color:#9aa5ad;font-size:12px;padding:8px 0}
+.vexp-footer{text-align:center;color:#9aa5ad;font-size:11px;margin-top:16px}
+@media(max-width:700px){
+  .export-sheet-wrap{overflow:auto}
+}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -807,6 +896,125 @@ body[data-view="notes"] .layout{padding-top:12px}
   </div>
 </div>
 
+
+<script>
+/* ===== v24 여행 설정 / 새 여행 ===== */
+const TRIP_META_KEY="our_trip_planner_meta_v24";
+const DEFAULT_TRIP_META={
+  title:"후쿠오카 · 부부 힐링 & 먹방 여행",
+  people:"2명 (부부)",
+  start:"2026.10.01(목)",
+  end:"2026.10.04(일)",
+  desc:"3박 4일 · 대중교통 중심",
+  theme:"바다 · 먹방 · 쇼핑 · 힐링",
+  days:{
+    "10/1":{date:"10/1 · 도착",title:"후쿠오카 도착 & THE LIVELY"},
+    "10/2":{date:"10/2 · 팜비치",title:"팜비치 · 바다 · 카페 · 솔라리아"},
+    "10/3":{date:"10/3 · 쇼핑",title:"텐진 쇼핑 · 캐널시티 · 나카스"},
+    "10/4":{date:"10/4 · 귀국",title:"오호리공원 · 마지막 쇼핑 · 귀국"}
+  }
+};
+function getTripMeta(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(TRIP_META_KEY)||"null");
+    if(!saved) return JSON.parse(JSON.stringify(DEFAULT_TRIP_META));
+    return {
+      ...JSON.parse(JSON.stringify(DEFAULT_TRIP_META)),
+      ...saved,
+      days:{...DEFAULT_TRIP_META.days,...(saved.days||{})}
+    };
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_TRIP_META)); }
+}
+function saveTripMeta(meta){localStorage.setItem(TRIP_META_KEY,JSON.stringify(meta));}
+function openTripSettings(){
+  const m=getTripMeta();
+  document.getElementById("tripMetaTitle").value=m.title||"";
+  document.getElementById("tripMetaPeople").value=m.people||"";
+  document.getElementById("tripMetaStart").value=m.start||"";
+  document.getElementById("tripMetaEnd").value=m.end||"";
+  document.getElementById("tripMetaDesc").value=m.desc||"";
+  document.getElementById("tripMetaTheme").value=m.theme||"";
+  const mount=document.getElementById("tripDaySettings");
+  const keys=["10/1","10/2","10/3","10/4"];
+  mount.innerHTML=keys.map((key,i)=>{
+    const d=m.days[key]||{};
+    return `<div class="trip-day-row">
+      <div class="day-number">DAY ${i+1}<br><small style="color:#7a8792">${key}</small></div>
+      <label>날짜 버튼 이름<input data-trip-day="${key}" data-field="date" value="${escapeHtml(d.date||key)}"></label>
+      <label>하루 일정 제목<input data-trip-day="${key}" data-field="title" value="${escapeHtml(d.title||"")}"></label>
+    </div>`;
+  }).join("");
+  document.getElementById("tripSettingsModal").classList.add("show");
+}
+function closeTripSettings(){document.getElementById("tripSettingsModal").classList.remove("show")}
+function saveTripSettings(){
+  const m=getTripMeta();
+  m.title=document.getElementById("tripMetaTitle").value.trim()||m.title;
+  m.people=document.getElementById("tripMetaPeople").value.trim()||m.people;
+  m.start=document.getElementById("tripMetaStart").value.trim()||m.start;
+  m.end=document.getElementById("tripMetaEnd").value.trim()||m.end;
+  m.desc=document.getElementById("tripMetaDesc").value.trim()||m.desc;
+  m.theme=document.getElementById("tripMetaTheme").value.trim()||m.theme;
+  document.querySelectorAll("[data-trip-day]").forEach(el=>{
+    const day=el.dataset.tripDay,field=el.dataset.field;
+    if(!m.days[day]) m.days[day]={};
+    m.days[day][field]=el.value.trim();
+  });
+  saveTripMeta(m);
+  applyTripMeta();
+  closeTripSettings();
+  showToast("✈️ 여행 설정을 저장했어요.");
+}
+function applyTripMeta(){
+  const m=getTripMeta();
+  const titleEl=document.querySelector(".trip-title");
+  const subEl=document.querySelector(".hero .subtitle");
+  if(titleEl) titleEl.textContent=m.title;
+  if(subEl) subEl.textContent=`${m.start} ~ ${m.end} · ${m.desc}`;
+  const sideRows=document.querySelectorAll(".sidebar .panel:first-child .info-row");
+  if(sideRows[0]) sideRows[0].querySelector("strong").textContent=`${m.start} ~ ${m.end}`;
+  if(sideRows[1]) sideRows[1].querySelector("strong").textContent=m.people;
+  if(sideRows[2]) sideRows[2].querySelector("strong").textContent=m.theme;
+  ["10/1","10/2","10/3","10/4"].forEach((key,i)=>{
+    if(typeof days!=="undefined" && days[key]){
+      days[key].title=m.days[key]?.title||days[key].title;
+      days[key].pill=`${m.days[key]?.date||key} · ${i+1}일차`;
+    }
+  });
+  const tabs=document.querySelectorAll("#mobileDayTabs button");
+  ["10/1","10/2","10/3","10/4"].forEach((key,i)=>{
+    if(tabs[i]) tabs[i].textContent=m.days[key]?.date||key;
+  });
+  document.querySelectorAll(".day-summary .day-chip").forEach((el,i)=>{
+    const key=["10/1","10/2","10/3","10/4"][i], d=m.days[key];
+    if(!d) return;
+    const date=el.querySelector(".date"), b=el.querySelector("b");
+    if(date) date.innerHTML=escapeHtml((d.date||key).replace(" · ","<br>"));
+    if(b) b.textContent=(d.title||"").split(" · ")[0];
+  });
+  if(typeof selected!=="undefined" && typeof renderDay==="function") renderDay();
+}
+function createNewTrip(){
+  if(!confirm("새 여행을 만들까요? 현재 여행의 로컬 일정·맛집 수정 내용이 초기화됩니다.")) return;
+  localStorage.removeItem("fukuoka_custom_items");
+  localStorage.removeItem("fukuoka_schedule_overrides");
+  localStorage.removeItem("fukuoka_schedule_deleted");
+  localStorage.removeItem("fukuoka_food_candidates_v23");
+  const fresh={
+    title:"새로운 여행",
+    people:"2명",
+    start:"여행 시작일",
+    end:"여행 종료일",
+    desc:"여행 기간 · 이동 방법",
+    theme:"여행 테마",
+    days:JSON.parse(JSON.stringify(DEFAULT_TRIP_META.days))
+  };
+  saveTripMeta(fresh);
+  location.reload();
+}
+window.addEventListener("load",()=>setTimeout(applyTripMeta,50));
+</script>
+
 <div class="app">
 <header>
   <div class="topbar">
@@ -820,6 +1028,7 @@ body[data-view="notes"] .layout{padding-top:12px}
       <button data-view="notes">📝 메모</button>
     </div>
     <div class="right">
+  <button class="header-pill settings-action" title="여행 설정" onclick="openTripSettings()">⚙️ 설정</button>
   <button class="header-pill share-action" title="공유하기" onclick="sharePlanner()">↗ 공유</button>
   <button class="header-pill export-action" title="내보내기" onclick="exportPlannerImage()">⇩ 내보내기</button>
 </div>
@@ -1112,6 +1321,65 @@ body[data-view="notes"] .layout{padding-top:12px}
   </div>
 </div>
 
+
+<div class="trip-settings-modal" id="tripSettingsModal" onclick="if(event.target===this)closeTripSettings()">
+  <div class="trip-settings-card">
+    <div class="trip-settings-head">
+      <div>
+        <div class="settings-eyebrow">⚙️ TRIP SETTINGS</div>
+        <h2>우리들의 여행 설정</h2>
+        <p>여행 제목과 날짜, 하루별 이름을 여기서 바꿀 수 있어요.</p>
+      </div>
+      <button class="trip-settings-close" onclick="closeTripSettings()">×</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>✈️ 기본 여행 정보</h3>
+      <div class="settings-grid">
+        <label>여행 제목
+          <input id="tripMetaTitle" placeholder="예: 후쿠오카 · 부부 힐링 & 먹방 여행">
+        </label>
+        <label>여행 인원
+          <input id="tripMetaPeople" placeholder="예: 2명 (부부)">
+        </label>
+        <label>여행 시작일
+          <input id="tripMetaStart" placeholder="2026.10.01(목)">
+        </label>
+        <label>여행 종료일
+          <input id="tripMetaEnd" placeholder="2026.10.04(일)">
+        </label>
+        <label class="full">여행 설명
+          <input id="tripMetaDesc" placeholder="예: 3박 4일 · 대중교통 중심">
+        </label>
+        <label class="full">여행 테마
+          <input id="tripMetaTheme" placeholder="예: 바다 · 먹방 · 쇼핑 · 힐링">
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <div>
+          <h3>📅 날짜별 이름</h3>
+          <p>오버뷰의 날짜 버튼과 일정 화면 제목에 같이 반영됩니다.</p>
+        </div>
+      </div>
+      <div id="tripDaySettings" class="trip-day-settings"></div>
+    </div>
+
+    <div class="settings-section settings-actions-section">
+      <button class="secondary-btn" onclick="setActiveView('schedule');closeTripSettings()">📋 일정 수정/추가로 이동</button>
+      <button class="secondary-btn" onclick="setActiveView('schedule');closeTripSettings();setTimeout(()=>openAddModal(),120)">＋ 새 일정 바로 추가</button>
+      <button class="danger-outline-btn" onclick="createNewTrip()">🆕 새 여행 만들기</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="small-btn" onclick="closeTripSettings()">취소</button>
+      <button class="primary" onclick="saveTripSettings()">💾 여행 설정 저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="addModal">
   <div class="modal-card">
     <h2 id="addModalTitle">📅 일정 추가</h2>
@@ -1334,106 +1602,123 @@ function buildExportSheet(){
   </div>`;
 }
 
-function buildExportSvg(){
-  const W=1400,H=900;
-  const colors={"10/1":"#2f6594","10/2":"#4f9660","10/3":"#e85c7b","10/4":"#e79642"};
+function buildVerticalExportHtml(){
+  const meta=getTripMeta();
   const order=["10/1","10/2","10/3","10/4"];
+  const colors={"10/1":"#2f6594","10/2":"#4f9660","10/3":"#e85c7b","10/4":"#e79642"};
   const esc=v=>escapeHtml(v);
+  const dayCards=order.map(day=>{
+    const d=days[day];
+    const rows=getScheduleRows(day);
+    const food=getFoodCandidates(day);
+    const rowsHtml=rows.length ? rows.map(r=>`
+      <div class="vexp-row">
+        <div class="vexp-time">${esc(r.row[0]||"-")}</div>
+        <div class="vexp-main"><b>${esc(r.row[1]||"-")}</b><span>${esc(r.row[2]||"-")}</span></div>
+        <div class="vexp-move">${esc(r.row[3]||"-")}</div>
+        <div class="vexp-note">${esc(r.row[4]||r.row[6]||"")}</div>
+      </div>`).join("") : `<div class="vexp-empty">등록된 일정이 없어요.</div>`;
+    const foodHtml=food.slice(0,3).map(f=>`
+      <div class="vexp-food"><b>${esc(f[0])}순위</b><span>${esc(f[1])}</span><small>${esc(f[2]||"")} · ${esc(f[3]||"")}</small></div>`).join("");
+    return `<section class="vexp-day">
+      <div class="vexp-day-head" style="background:${colors[day]}">
+        <b>${esc(d.pill)}</b><span>${esc(d.title)}</span>
+      </div>
+      <div class="vexp-body">
+        <div class="vexp-table-head"><span>시간</span><span>일정 / 장소</span><span>이동</span><span>식사·메모</span></div>
+        ${rowsHtml}
+        <div class="vexp-food-head">🍜 맛집 후보</div>
+        <div class="vexp-food-grid">${foodHtml || '<div class="vexp-empty">맛집 후보가 없어요.</div>'}</div>
+      </div>
+    </section>`;
+  }).join("");
 
-  let dayCards="";
-  order.forEach((day,idx)=>{
-    const d=days[day], c=colors[day];
-    const x=30+(idx%2)*685;
-    const y=300+Math.floor(idx/2)*285;
-
-    let rows="";
-    getScheduleRows(day).slice(0,5).forEach((r,j)=>{
-      const yy=y+58+j*33;
-      rows+=`
-        <line x1="${x+16}" y1="${yy-15}" x2="${x+638}" y2="${yy-15}" stroke="#edf1f4"/>
-        <text x="${x+18}" y="${yy+6}" class="time">${esc(r[0])}</text>
-        <text x="${x+72}" y="${yy+6}" class="bold">${esc(r[1])}</text>
-        <text x="${x+294}" y="${yy+6}" class="small">${esc(r[2])}</text>
-        <text x="${x+472}" y="${yy+6}" class="small">${esc(r[3])}</text>`;
-    });
-
-    const food=getFoodCandidates(day).slice(0,3).map(f=>`${esc(f[0])}순위 · ${esc(f[1])}`).join("  ·  ");
-
-    dayCards+=`
-      <g>
-        <rect x="${x}" y="${y}" width="655" height="258" rx="16" fill="#fff" stroke="#dfe6ec"/>
-        <rect x="${x}" y="${y}" width="655" height="38" rx="16" fill="${c}"/>
-        <text x="${x+16}" y="${y+25}" class="dayhead">${esc(d.pill)}</text>
-        <text x="${x+145}" y="${y+25}" class="dayhead">${esc(d.title)}</text>
-        ${rows}
-        <line x1="${x+16}" y1="${y+220}" x2="${x+638}" y2="${y+220}" stroke="#edf1f4"/>
-        <text x="${x+18}" y="${y+242}" class="tiny">🍜 맛집 1~3순위  ·  ${food}</text>
-      </g>`;
-  });
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-  <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    <defs>
-      <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#f6fafc"/><stop offset="1" stop-color="#f1f6f9"/>
-      </linearGradient>
-      <filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity=".10"/></filter>
-      <style>
-        text{font-family:Arial,'Noto Sans KR',sans-serif;fill:#24313d}
-        .title{font-size:30px;font-weight:900}.sub{font-size:14px;fill:#6d7c88}
-        .boxh{font-size:16px;font-weight:900}.small{font-size:11px;fill:#5d6d79}
-        .tiny{font-size:9px;fill:#75848f}.bold{font-size:11px;font-weight:800}
-        .time{font-size:11px;font-weight:900;fill:#2f6594}.dayhead{font-size:13px;font-weight:900;fill:#fff}
-      </style>
-    </defs>
-
-    <rect width="${W}" height="${H}" fill="url(#pageBg)"/>
-
-    <text x="30" y="38" class="title">✈️ FUKUOKA · TRIP PLANNER</text>
-    <text x="31" y="62" class="sub">후쿠오카 · 부부 힐링 &amp; 먹방 여행 · 2026.10.01(목) ~ 10.04(일) · 3박 4일</text>
-
-    <!-- compact trip summary -->
-    <g filter="url(#shadow)">
-      <rect x="30" y="82" width="1340" height="190" rx="16" fill="#fff" stroke="#dfe6ec"/>
-
-      <text x="50" y="112" class="boxh">여행 정보</text>
-      <text x="50" y="137" class="small">👫 인원</text><text x="118" y="137" class="bold">2명 (부부)</text>
-      <text x="50" y="162" class="small">🎨 테마</text><text x="118" y="162" class="bold">바다 · 먹방 · 쇼핑 · 힐링</text>
-
-      <text x="355" y="112" class="boxh">🏨 숙소</text>
-      <text x="355" y="137" class="small">10/1</text><text x="410" y="137" class="bold">THE LIVELY · 1박</text>
-      <text x="355" y="162" class="small">10/2~4</text><text x="410" y="162" class="bold">솔라리아 · 2박 · 조식</text>
-
-      <text x="715" y="112" class="boxh">✈️ 항공</text>
-      <text x="715" y="137" class="small">출국</text><text x="772" y="137" class="bold">ZE0643 · 10/1 18:30 → 20:00</text>
-      <text x="715" y="162" class="small">귀국</text><text x="772" y="162" class="bold">ZE0644 · 10/4 21:00 → 22:30</text>
-
-      <text x="1115" y="112" class="boxh">📅 핵심 일정</text>
-      <text x="1115" y="138" class="small">10/1 도착</text>
-      <text x="1115" y="160" class="small">10/2 팜비치</text>
-      <text x="1115" y="182" class="small">10/3 쇼핑</text>
-      <text x="1115" y="204" class="small">10/4 오호리 · 귀국</text>
-    </g>
-
-    <text x="30" y="292" class="boxh">📅 4일 일정 한눈에 보기</text>
+  return `<div id="verticalExportRoot" class="vertical-export-root">
+    <div class="vexp-title">✈️ TRIP PLANNER</div>
+    <h1>${esc(meta.title)}</h1>
+    <p class="vexp-sub">${esc(meta.start)} ~ ${esc(meta.end)} · ${esc(meta.desc)}</p>
+    <div class="vexp-info">
+      <div><span>인원</span><b>${esc(meta.people)}</b></div>
+      <div><span>테마</span><b>${esc(meta.theme)}</b></div>
+    </div>
+    <div class="vexp-section-title">📅 전체 일정</div>
     ${dayCards}
-
-    <text x="30" y="885" class="tiny">FUKUOKA TRIP PLANNER · 한 장 요약본</text>
-  </svg>`;
+    <div class="vexp-footer">우리들의 여행플래너 · 한 장 요약</div>
+  </div>`;
 }
 
 function exportPlannerImage(){
   const sheet=document.getElementById("exportSheet");
-  const svg=buildExportSvg();
-  sheet.innerHTML=`<div style="display:flex;justify-content:center;background:#eef3f6;border-radius:12px;padding:8px;overflow:auto">
-    <img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}"
-         style="display:block;width:100%;max-width:1400px;height:auto;margin:0 auto;border-radius:10px;background:#fff">
-  </div>`;
+  sheet.innerHTML=buildVerticalExportHtml();
   document.getElementById("exportOverlay").classList.add("show");
 }
 
 function closeExportPreview(){
   document.getElementById("exportOverlay").classList.remove("show");
+}
+
+async function makeExportCanvas(){
+  const root=document.getElementById("verticalExportRoot");
+  if(!root) throw new Error("내보내기 영역을 찾을 수 없어요.");
+  if(typeof html2canvas!=="function") throw new Error("이미지 변환 기능을 불러오지 못했어요.");
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  return await html2canvas(root,{
+    backgroundColor:"#f6f8fb",
+    scale:2,
+    useCORS:true,
+    logging:false,
+    windowWidth:root.scrollWidth
+  });
+}
+
+async function downloadExportPng(){
+  try{
+    const canvas=await makeExportCanvas();
+    const dataUrl=canvas.toDataURL("image/png");
+    const filename=(getTripMeta().title||"trip-planner").replace(/[\\/:*?"<>|]/g,"_")+".png";
+
+    if(window.Android && typeof window.Android.saveImage==="function"){
+      window.Android.saveImage(dataUrl,filename);
+      showToast("📱 갤러리에 저장을 요청했어요.");
+      return;
+    }
+
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(b=>b?resolve(b):reject(new Error("PNG 변환 실패")),"image/png",1);
+    });
+    const file=new File([blob],filename,{type:"image/png"});
+
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:"여행 한 장 요약",text:"우리들의 여행플래너 요약 이미지",files:[file]});
+      showToast("이미지를 공유/저장할 수 있는 화면을 열었어요.");
+      return;
+    }
+
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=filename;a.rel="noopener";a.style.display="none";
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},1200);
+    showToast("이미지를 저장했어요. 다운로드 폴더를 확인해주세요.");
+  }catch(e){
+    console.error(e);
+    showToast("이미지 저장에 실패했어요. 다시 눌러주세요.");
+  }
+}
+
+async function shareExportImage(){
+  try{
+    const canvas=await makeExportCanvas();
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(b=>b?resolve(b):reject(new Error("PNG 변환 실패")),"image/png",1);
+    });
+    const file=new File([blob],"trip-planner-summary.png",{type:"image/png"});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:getTripMeta().title||"여행 요약",files:[file]});
+      return;
+    }
+    await downloadExportPng();
+  }catch(e){ console.error(e); showToast("이미지 공유에 실패했어요."); }
 }
 
 async function makeExportCanvas(){
@@ -1790,7 +2075,10 @@ function renderMap(){
 
   const day=selected;
   const d=days[day], color=dayMapColors[day];
-  const points=d.route.map(r=>resolveCoord(r[1])).filter(Boolean);
+  // 수정/추가한 일정의 "장소"를 지도 경로에도 반영합니다.
+  const editableRows=getScheduleRows(day);
+  let points=editableRows.map(item=>resolveCoord(item.row[2])).filter(Boolean);
+  if(points.length<2) points=d.route.map(r=>resolveCoord(r[1])).filter(Boolean);
 
   if(points.length>=2){
     L.polyline(points,{
@@ -1799,7 +2087,8 @@ function renderMap(){
   }
 
   const labelled=new Set();
-  d.route.forEach(r=>{
+  const markerRows=editableRows.length?editableRows.map(item=>[item.row[0],item.row[2]]):d.route;
+  markerRows.forEach(r=>{
     const c=resolveCoord(r[1]);
     if(!c) return;
     const m=L.marker(c,{icon:makeDayIcon(color),zIndexOffset:100}).addTo(routeLayer);
