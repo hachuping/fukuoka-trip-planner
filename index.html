@@ -931,6 +931,115 @@ body[data-view="notes"] .layout{padding-top:12px}
   .vexp-info{grid-template-columns:1fr !important}
   .vexp-day-head{align-items:flex-start !important;flex-direction:column !important;gap:4px !important}
 }
+/* ===== v28 Android WebView 화면 안정화 ===== */
+html,body{
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+/* 고정 로그인/연결 화면은 Android 상태바 영역을 피합니다. */
+@media(max-width:700px){
+  #supabaseSetup,
+  #loginLayer{
+    top:max(24px, env(safe-area-inset-top, 0px)) !important;
+    bottom:0 !important;
+    height:auto !important;
+    min-height:calc(100dvh - max(24px, env(safe-area-inset-top, 0px))) !important;
+    padding-top:16px !important;
+    padding-bottom:max(16px, env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+  }
+
+  #loginLayer > div,
+  #supabaseSetup > div{
+    margin:auto !important;
+    flex:0 1 auto;
+  }
+
+  /* 내보내기 미리보기는 세로 스크롤만 허용합니다. */
+  .export-overlay{
+    top:max(24px, env(safe-area-inset-top, 0px)) !important;
+    bottom:0 !important;
+    height:auto !important;
+    min-height:calc(100dvh - max(24px, env(safe-area-inset-top, 0px))) !important;
+    padding:8px !important;
+    overflow:hidden !important;
+    touch-action:pan-y;
+  }
+
+  .export-card{
+    width:calc(100vw - 16px) !important;
+    max-width:none !important;
+    max-height:calc(100dvh - max(32px, env(safe-area-inset-top, 0px)) - max(8px, env(safe-area-inset-bottom, 0px))) !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+  }
+
+  .export-sheet-wrap{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+  }
+
+  .vertical-export-root{
+    width:min(720px,100%) !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 auto !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+
+  .vexp-day,
+  .vexp-body,
+  .vexp-info,
+  .vexp-food-grid,
+  .vexp-row,
+  .vexp-main,
+  .vexp-move,
+  .vexp-note,
+  .vexp-food{
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+
+  .vexp-main b,
+  .vexp-main span,
+  .vexp-move,
+  .vexp-note,
+  .vexp-food span,
+  .vexp-food small{
+    overflow-wrap:anywhere !important;
+    word-break:break-word !important;
+  }
+
+  .vexp-day-head b,
+  .vexp-day-head span{
+    min-width:0 !important;
+    max-width:100% !important;
+    white-space:normal !important;
+    overflow-wrap:anywhere !important;
+  }
+}
+
+/* 작은 화면에서도 로그인 카드가 항상 화면 가운데에 오도록 보정 */
+@media(max-height:620px) and (max-width:700px){
+  #loginLayer > div,
+  #supabaseSetup > div{
+    max-height:calc(100dvh - 24px) !important;
+    overflow-y:auto !important;
+  }
+}
+
 </style>
 
 </head>
@@ -954,7 +1063,6 @@ body[data-view="notes"] .layout{padding-top:12px}
 <div id="loginLayer" style="position:fixed;inset:0;z-index:5900;background:#f6f8fb;display:none;place-items:center;padding:20px;">
   <div style="width:min(440px,94vw);background:#fff;border:1px solid #dfe6ec;border-radius:24px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.10)">
     <h2 style="margin:0;color:#174d7d">🔐 로그인</h2>
-    <p style="color:#71808d">사용자님 또는 남편분 계정으로 로그인하세요.</p>
     <input id="sbEmail" type="email" placeholder="이메일" style="width:100%;margin-top:8px;padding:11px;border:1px solid #dfe6ec;border-radius:10px">
     <input id="sbPw" type="password" placeholder="비밀번호" style="width:100%;margin-top:8px;padding:11px;border:1px solid #dfe6ec;border-radius:10px">
     <button onclick="signIn()" style="margin-top:12px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">로그인</button>
@@ -1744,12 +1852,14 @@ async function makeExportCanvas(){
   if(!root) throw new Error("내보내기 영역을 찾을 수 없어요.");
   if(typeof html2canvas!=="function") throw new Error("이미지 변환 기능을 불러오지 못했어요.");
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  const renderWidth=Math.max(1,root.clientWidth || root.scrollWidth);
   return await html2canvas(root,{
     backgroundColor:"#f6f8fb",
     scale:2,
     useCORS:true,
     logging:false,
-    windowWidth:root.scrollWidth
+    width:renderWidth,
+    windowWidth:renderWidth
   });
 }
 
