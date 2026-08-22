@@ -2265,15 +2265,75 @@ let sharedSchedule = [];
 let sharedPlaces = [];
 let sharedFoods = [];
 
-function goLogin(){
+async function ensureSupabaseLoaded(){
+  if(window.supabase && typeof window.supabase.createClient==="function") return true;
+
+  const status=document.getElementById('sbStatus');
+  if(status) status.textContent='연결 기능을 준비하는 중이에요…';
+
+  const loadScript=(src)=>new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=true;
+    s.onload=()=>resolve(true);
+    s.onerror=()=>reject(new Error('Supabase 라이브러리를 불러오지 못했습니다.'));
+    document.head.appendChild(s);
+  });
+
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+  }catch(e){
+    try{
+      await loadScript('https://unpkg.com/@supabase/supabase-js@2');
+    }catch(e2){
+      if(status) status.textContent='인터넷 연결을 확인한 뒤 다시 눌러주세요.';
+      console.error(e2);
+      return false;
+    }
+  }
+
+  return !!(window.supabase && typeof window.supabase.createClient==="function");
+}
+
+async function goLogin(){
   const url=document.getElementById('sbUrl').value.trim();
   const key=document.getElementById('sbKey').value.trim();
-  if(!url || !key){document.getElementById('sbStatus').textContent='Project URL과 Publishable Key를 넣어주세요.';return;}
-  localStorage.setItem('fukuoka_sb_url',url);
-  localStorage.setItem('fukuoka_sb_key',key);
-  sb=window.supabase.createClient(url,key);
-  document.getElementById('supabaseSetup').style.display='none';
-  document.getElementById('loginLayer').style.display='grid';
+  const status=document.getElementById('sbStatus');
+
+  if(!url || !key){
+    status.textContent='Project URL과 Publishable Key를 넣어주세요.';
+    return;
+  }
+
+  // 오타가 흔한 부분이라 URL 형식도 먼저 확인합니다.
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/)?$/i.test(url)){
+    status.textContent='Project URL 형식이 올바른지 확인해주세요. 예: https://xxxx.supabase.co';
+    return;
+  }
+
+  const ready=await ensureSupabaseLoaded();
+  if(!ready){
+    status.textContent='Supabase 연결 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.';
+    return;
+  }
+
+  try{
+    sb=window.supabase.createClient(url.replace(/\/$/,''),key);
+
+    // 실제 서버와 통신 가능한지 확인합니다.
+    const {error}=await sb.auth.getSession();
+    if(error) throw error;
+
+    localStorage.setItem('fukuoka_sb_url',url);
+    localStorage.setItem('fukuoka_sb_key',key);
+
+    document.getElementById('supabaseSetup').style.display='none';
+    document.getElementById('loginLayer').style.display='grid';
+    status.textContent='';
+  }catch(e){
+    console.error(e);
+    status.textContent='Supabase 연결에 실패했어요. Project URL과 Publishable Key를 다시 확인해주세요.';
+  }
 }
 
 async function signIn(){
@@ -2319,12 +2379,19 @@ function resetConnection(){
   document.getElementById('sbStatus').textContent='이제 올바른 Project URL과 Publishable Key를 다시 입력하세요.';
 }
 
-function bootSupabase(){
+async function bootSupabase(){
   const url=localStorage.getItem('fukuoka_sb_url');
   const key=localStorage.getItem('fukuoka_sb_key');
   if(url && key){
     document.getElementById('sbUrl').value=url;
     document.getElementById('sbKey').value=key;
+
+    const ready=await ensureSupabaseLoaded();
+    if(!ready){
+      document.getElementById('sbStatus').textContent='Supabase 연결 기능을 불러오지 못했어요. 연결 버튼을 다시 눌러주세요.';
+      return;
+    }
+
     sb=window.supabase.createClient(url,key);
     sb.auth.getSession().then(({data})=>{
       if(data.session){
