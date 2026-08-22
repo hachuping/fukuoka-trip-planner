@@ -775,7 +775,7 @@ body[data-view="notes"] .layout{padding-top:12px}
     <label style="display:block;margin-top:12px;font-size:12px;font-weight:800;color:#5f6e7a">Publishable Key
       <input id="sbKey" type="password" style="width:100%;margin-top:6px;padding:11px;border:1px solid #dfe6ec;border-radius:10px" placeholder="sb_publishable_...">
     </label>
-    <button id="connectBtn" type="button" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">연결</button>
+    <button id="connectBtn" type="button" onclick="connectAndLogin()" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">연결</button>
     <div id="sbStatus" style="margin-top:10px;color:#c94b3b;font-size:12px"></div>
   </div>
 </div>
@@ -1131,6 +1131,45 @@ body[data-view="notes"] .layout{padding-top:12px}
     </div>
   </div>
 </div>
+
+
+<script>
+/* v23.6 — connection screen navigation is independent from Supabase/WebView */
+(function () {
+  window.connectAndLogin = function () {
+    var urlEl = document.getElementById('sbUrl');
+    var keyEl = document.getElementById('sbKey');
+    var status = document.getElementById('sbStatus');
+    var setup = document.getElementById('supabaseSetup');
+    var login = document.getElementById('loginLayer');
+
+    var url = urlEl ? String(urlEl.value || '').trim().replace(/\/$/, '') : '';
+    var key = keyEl ? String(keyEl.value || '').trim() : '';
+
+    if (!url || !key) {
+      if (status) status.textContent = 'Project URL과 Publishable Key를 모두 입력해주세요.';
+      return;
+    }
+
+    try {
+      localStorage.setItem('fukuoka_sb_url', url);
+      localStorage.setItem('fukuoka_sb_key', key);
+    } catch (e) {}
+
+    // Do NOT load Supabase, call the network, or run auth here.
+    // Just move to the login screen.
+    if (setup) setup.style.display = 'none';
+    if (login) {
+      login.style.display = 'grid';
+      login.style.visibility = 'visible';
+      login.style.opacity = '1';
+    }
+
+    var loginStatus = document.getElementById('loginStatus');
+    if (loginStatus) loginStatus.textContent = '연결 정보가 저장되었습니다. 이메일과 비밀번호를 입력해주세요.';
+  };
+})();
+</script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
