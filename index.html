@@ -775,7 +775,7 @@ body[data-view="notes"] .layout{padding-top:12px}
     <label style="display:block;margin-top:12px;font-size:12px;font-weight:800;color:#5f6e7a">Publishable Key
       <input id="sbKey" type="password" style="width:100%;margin-top:6px;padding:11px;border:1px solid #dfe6ec;border-radius:10px" placeholder="sb_publishable_...">
     </label>
-    <button id="connectBtn" type="button" onclick="connectAndLogin()" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer">연결</button>
+    <button id="connectBtn" type="button" onclick="window.forceConnectionContinue && window.forceConnectionContinue(event)" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#174d7d;color:#fff;font-weight:800;cursor:pointer;touch-action:manipulation">연결</button>
     <div id="sbStatus" style="margin-top:10px;color:#c94b3b;font-size:12px"></div>
   </div>
 </div>
@@ -1134,21 +1134,18 @@ body[data-view="notes"] .layout{padding-top:12px}
 
 
 <script>
-/* v23.6 — connection screen navigation is independent from Supabase/WebView */
+/* v23.7 — Android WebView: move first, initialize Supabase second */
 (function () {
-  window.connectAndLogin = function () {
+  function saveConnectionValues() {
     var urlEl = document.getElementById('sbUrl');
     var keyEl = document.getElementById('sbKey');
-    var status = document.getElementById('sbStatus');
-    var setup = document.getElementById('supabaseSetup');
-    var login = document.getElementById('loginLayer');
-
     var url = urlEl ? String(urlEl.value || '').trim().replace(/\/$/, '') : '';
     var key = keyEl ? String(keyEl.value || '').trim() : '';
 
     if (!url || !key) {
+      var status = document.getElementById('sbStatus');
       if (status) status.textContent = 'Project URL과 Publishable Key를 모두 입력해주세요.';
-      return;
+      return false;
     }
 
     try {
@@ -1156,9 +1153,23 @@ body[data-view="notes"] .layout{padding-top:12px}
       localStorage.setItem('fukuoka_sb_key', key);
     } catch (e) {}
 
-    // Do NOT load Supabase, call the network, or run auth here.
-    // Just move to the login screen.
-    if (setup) setup.style.display = 'none';
+    return true;
+  }
+
+  window.forceConnectionContinue = function (event) {
+    try { if (event) { event.preventDefault(); event.stopPropagation(); } } catch (e) {}
+
+    if (!saveConnectionValues()) return false;
+
+    var setup = document.getElementById('supabaseSetup');
+    var login = document.getElementById('loginLayer');
+
+    // IMPORTANT: screen transition happens immediately.
+    // No Supabase network request is allowed to block this step.
+    if (setup) {
+      setup.style.display = 'none';
+      setup.style.visibility = 'hidden';
+    }
     if (login) {
       login.style.display = 'grid';
       login.style.visibility = 'visible';
@@ -1166,8 +1177,31 @@ body[data-view="notes"] .layout{padding-top:12px}
     }
 
     var loginStatus = document.getElementById('loginStatus');
-    if (loginStatus) loginStatus.textContent = '연결 정보가 저장되었습니다. 이메일과 비밀번호를 입력해주세요.';
+    if (loginStatus) loginStatus.textContent = '연결 정보가 저장되었습니다. 이제 로그인해주세요.';
+
+    // Initialize Supabase only after the screen has changed.
+    setTimeout(function () {
+      try {
+        if (typeof window.goLogin === 'function') {
+          window.goLogin();
+        }
+      } catch (e) {
+        console.warn('Supabase background initialization skipped:', e);
+      }
+    }, 0);
+
+    return false;
   };
+
+  // Backup listener for Android WebView touch/click handling.
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('#connectBtn') : null;
+    if (!btn) return;
+    if (window.__connectionHandled) return;
+    window.__connectionHandled = true;
+    window.forceConnectionContinue(e);
+    setTimeout(function(){ window.__connectionHandled = false; }, 300);
+  }, true);
 })();
 </script>
 
