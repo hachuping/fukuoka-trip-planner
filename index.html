@@ -800,6 +800,98 @@ body[data-view="notes"] .layout{padding-top:12px}
   .export-sheet-wrap{overflow:auto}
 }
 
+
+/* ===== v29 최종 모바일 폭/내보내기 스크롤 보정 ===== */
+html,body,#app,.app{width:100%;min-width:0;max-width:100%;}
+html,body{overflow-x:hidden;overflow-x:clip;}
+.app,main,.layout,.hero,.timeline,.map-wrap{min-width:0;max-width:100%;}
+
+@media(max-width:700px){
+  .hero{width:100%;min-width:0;}
+  .trip-title,.subtitle{word-break:keep-all;overflow-wrap:break-word;}
+  .layout{width:100%;min-width:0;overflow:visible;}
+  main{width:100%;min-width:0;}
+  .map-wrap{width:100%;max-width:100%;}
+  #map{width:100%;max-width:100%;}
+
+  /* 내보내기는 '카드 하나'만 세로로 움직이게 합니다. */
+  .export-overlay{
+    display:none;
+    align-items:flex-start !important;
+    justify-content:center !important;
+    padding:8px !important;
+    overflow:hidden !important;
+    touch-action:none !important;
+  }
+  .export-overlay.show{display:flex !important;}
+  .export-card{
+    width:calc(100vw - 16px) !important;
+    max-width:calc(100vw - 16px) !important;
+    height:calc(100dvh - max(16px, env(safe-area-inset-top,0px)) - max(8px, env(safe-area-inset-bottom,0px))) !important;
+    max-height:none !important;
+    min-width:0 !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior:contain !important;
+    touch-action:pan-y !important;
+  }
+  .export-head{
+    width:100% !important;
+    min-width:0 !important;
+    flex-wrap:wrap !important;
+  }
+  .export-head strong{
+    flex:1 1 160px !important;
+    min-width:0 !important;
+    overflow-wrap:anywhere !important;
+  }
+  .export-head-actions{flex:0 0 auto !important;}
+
+  /* 기존 .export-sheet의 900px 고정 폭을 완전히 해제합니다. */
+  .export-sheet,
+  #exportSheet{
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+  }
+  .export-sheet-wrap{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:visible !important;
+  }
+  .vertical-export-root{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:20px 16px 28px !important;
+    box-sizing:border-box !important;
+  }
+  .vexp-info,.vexp-day,.vexp-body,.vexp-row,.vexp-table-head,.vexp-food-grid,.vexp-food{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  .vexp-table-head,.vexp-row{grid-template-columns:68px minmax(0,1fr) !important;}
+  .vexp-main,.vexp-move,.vexp-note{min-width:0 !important;max-width:100% !important;}
+}
+
+@media(max-width:380px){
+  .vertical-export-root{padding-left:13px !important;padding-right:13px !important;}
+  .vexp-title{font-size:18px !important;}
+  .vertical-export-root h1{font-size:24px !important;}
+  .vexp-sub{font-size:12px !important;}
+  .vexp-table-head,.vexp-row{grid-template-columns:62px minmax(0,1fr) !important;gap:7px !important;}
+}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -1040,6 +1132,241 @@ html,body{
   }
 }
 
+
+/* ===== v30 내보내기 폭/여백 최종 보정 ===== */
+@media(max-width:700px){
+  /* 미리보기 바깥 여백을 최소화 */
+  .export-overlay{
+    padding:4px !important;
+    align-items:flex-start !important;
+    justify-content:center !important;
+  }
+
+  .export-card{
+    width:100% !important;
+    max-width:100% !important;
+    height:calc(100dvh - max(8px, env(safe-area-inset-top,0px)) - max(6px, env(safe-area-inset-bottom,0px))) !important;
+    padding:8px !important;
+    border-radius:16px !important;
+  }
+
+  /* 상단 버튼 영역도 화면 폭 안에서 한 줄로 정리 */
+  .export-head{
+    display:flex !important;
+    align-items:center !important;
+    flex-wrap:nowrap !important;
+    gap:6px !important;
+    padding:2px 2px 8px !important;
+  }
+  .export-head strong{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    font-size:13px !important;
+    line-height:1.2 !important;
+    overflow-wrap:normal !important;
+    white-space:nowrap !important;
+  }
+  .export-head-actions{
+    flex:0 0 auto !important;
+    display:flex !important;
+    gap:5px !important;
+  }
+  .export-head-actions button{
+    padding:8px 9px !important;
+    font-size:11px !important;
+    white-space:nowrap !important;
+  }
+
+  .export-sheet-wrap{
+    width:100% !important;
+    max-width:100% !important;
+    overflow:visible !important;
+    display:flex !important;
+    justify-content:center !important;
+  }
+
+  #exportSheet,
+  .export-sheet{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:visible !important;
+  }
+
+  /*
+   * 핵심:
+   * 기존 900px → 모바일 화면 전체 폭이 아니라
+   * 약 390px짜리 세로 문서로 만들어 저장 이미지 자체도 슬림하게 합니다.
+   */
+  .vertical-export-root{
+    width:min(390px, calc(100vw - 24px)) !important;
+    max-width:min(390px, calc(100vw - 24px)) !important;
+    min-width:0 !important;
+    margin:0 auto !important;
+    padding:14px 12px 22px !important;
+    box-sizing:border-box !important;
+    overflow:visible !important;
+  }
+
+  .vertical-export-root h1{
+    font-size:24px !important;
+    line-height:1.22 !important;
+    margin:7px 0 5px !important;
+    word-break:keep-all !important;
+  }
+  .vexp-title{font-size:16px !important}
+  .vexp-sub{font-size:11px !important;line-height:1.35 !important}
+
+  .vexp-info{
+    margin-top:12px !important;
+    padding:11px !important;
+    border-radius:12px !important;
+    grid-template-columns:1fr 1.7fr !important;
+    gap:7px !important;
+  }
+  .vexp-info div{gap:6px !important}
+  .vexp-info span{min-width:38px !important;font-size:10px !important}
+  .vexp-info b{font-size:11px !important}
+
+  .vexp-section-title{
+    font-size:17px !important;
+    margin:17px 0 7px !important;
+  }
+
+  .vexp-day{
+    border-radius:12px !important;
+    margin-bottom:11px !important;
+  }
+  .vexp-day-head{
+    padding:9px 11px !important;
+    gap:8px !important;
+  }
+  .vexp-day-head b,
+  .vexp-day-head span{
+    font-size:11px !important;
+  }
+  .vexp-body{padding:8px 11px 11px !important}
+
+  .vexp-table-head,
+  .vexp-row{
+    grid-template-columns:55px minmax(0,1fr) !important;
+    gap:5px 8px !important;
+  }
+  .vexp-table-head{
+    font-size:9px !important;
+    padding:3px 0 5px !important;
+  }
+  .vexp-row{
+    padding:8px 0 !important;
+    font-size:10px !important;
+  }
+  .vexp-time{font-size:10px !important}
+  .vexp-main b{font-size:11px !important}
+  .vexp-main span{font-size:9px !important;margin-top:2px !important}
+  .vexp-move{font-size:9px !important}
+  .vexp-note{font-size:9px !important}
+
+  .vexp-food-head{
+    font-size:10px !important;
+    margin-top:8px !important;
+    padding-top:8px !important;
+  }
+  .vexp-food-grid{
+    grid-template-columns:1fr !important;
+    gap:5px !important;
+    margin-top:5px !important;
+  }
+  .vexp-food{padding:7px !important}
+  .vexp-food b{font-size:9px !important}
+  .vexp-food span{font-size:10px !important}
+  .vexp-food small{font-size:8px !important;margin-top:2px !important}
+  .vexp-footer{font-size:9px !important;margin-top:10px !important}
+}
+
+@media(max-width:380px){
+  .vertical-export-root{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    padding-left:10px !important;
+    padding-right:10px !important;
+  }
+  .export-head strong{font-size:12px !important}
+  .export-head-actions button{padding:7px 7px !important;font-size:10px !important}
+}
+</style>
+
+
+<style id="v31-connection-screen-fix">
+/* ===== v31 첫 연결 화면: Android WebView 전체 화면 + 이중 스크롤 제거 ===== */
+html, body {
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:0;
+  overflow-x:hidden !important;
+}
+
+@media (max-width:700px){
+  /* 연결/로그인 레이어가 뒤의 앱 상단을 절대 노출하지 않도록 전체 화면을 덮습니다.
+     상태바 여백은 레이어 안쪽 padding으로 확보합니다. */
+  #supabaseSetup,
+  #loginLayer {
+    position:fixed !important;
+    inset:0 !important;
+    top:0 !important;
+    bottom:0 !important;
+    left:0 !important;
+    right:0 !important;
+    width:100vw !important;
+    height:100dvh !important;
+    min-height:100dvh !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:
+      max(18px, env(safe-area-inset-top, 0px))
+      max(16px, env(safe-area-inset-right, 0px))
+      max(18px, env(safe-area-inset-bottom, 0px))
+      max(16px, env(safe-area-inset-left, 0px)) !important;
+    overflow:hidden !important;
+    overscroll-behavior:none !important;
+  }
+
+  /* 카드 자체가 화면보다 커지는 경우에만 카드 안에서 세로 스크롤 */
+  #supabaseSetup > div,
+  #loginLayer > div {
+    width:calc(100vw - 32px) !important;
+    max-width:440px !important;
+    max-height:calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(18px, env(safe-area-inset-bottom, 0px)) - 12px) !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+
+  #supabaseSetup > div {
+    padding:24px 20px !important;
+    border-radius:22px !important;
+  }
+
+  #loginLayer > div {
+    padding:24px 20px !important;
+    border-radius:22px !important;
+  }
+
+  #supabaseSetup input,
+  #loginLayer input,
+  #supabaseSetup button,
+  #loginLayer button {
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+}
 </style>
 
 </head>
@@ -2158,10 +2485,10 @@ function addKoreanLabel(layer,c,name){
   const ja=parts[1]||"";
   L.marker(c,{
     icon:L.divIcon({
-      className:'',
+      className:name==="후쿠오카공항"?'k-map-label-icon k-map-label-right':'k-map-label-icon',
       html:`<div class="k-map-label"><strong>${ko}</strong>${ja?`<span>${ja}</span>`:''}</div>`,
       iconSize:null,
-      iconAnchor:[0,28]
+      iconAnchor:name==="후쿠오카공항"?[100,28]:[0,28]
     }),
     interactive:false,
     zIndexOffset:200
