@@ -894,6 +894,12 @@ html,body{overflow-x:hidden;overflow-x:clip;}
 
 </style>
 
+<style id="android-statusbar-fix-v32">
+/* Android WebView: sticky 상단바가 상태바 뒤로 들어가지 않도록 실제 상태바 높이를 사용합니다. */
+:root{--android-status-bar-height:0px}
+header{top:var(--android-status-bar-height,0px) !important}
+</style>
+
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#174d7d">
 <meta name="mobile-web-app-capable" content="yes">
