@@ -849,6 +849,86 @@ body[data-view="notes"] .layout{padding-top:12px}
     padding:24px 22px !important;
   }
 }
+
+/* ===== v25 로그인 화면 중앙 정렬 + 모바일 안전영역 ===== */
+#loginLayer{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box;
+  padding:16px max(16px, env(safe-area-inset-left)) 16px max(16px, env(safe-area-inset-right)) !important;
+  padding-top:max(16px, env(safe-area-inset-top)) !important;
+  padding-bottom:max(16px, env(safe-area-inset-bottom)) !important;
+  overflow:auto;
+}
+#loginLayer > div{
+  position:relative !important;
+  left:auto !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  margin:0 auto !important;
+  box-sizing:border-box;
+  width:min(440px, calc(100vw - 32px)) !important;
+  max-width:440px !important;
+}
+#loginLayer input{box-sizing:border-box;max-width:100%}
+
+/* ===== v25 세로 내보내기: 가로 스크롤 제거 ===== */
+.export-card{
+  width:min(760px, calc(100vw - 20px)) !important;
+  max-width:760px !important;
+  max-height:94vh;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+}
+.export-sheet-wrap{
+  width:100% !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+}
+.vertical-export-root{
+  width:720px !important;
+  max-width:100% !important;
+  box-sizing:border-box;
+  margin:0 auto;
+}
+.vexp-table-head,
+.vexp-row{
+  grid-template-columns:80px minmax(0,1fr) !important;
+  gap:8px 12px !important;
+}
+.vexp-table-head span:nth-child(3),
+.vexp-table-head span:nth-child(4){display:none}
+.vexp-move,
+.vexp-note{
+  grid-column:2 !important;
+}
+.vexp-move{font-size:12px}
+.vexp-note{font-size:11px}
+.vexp-food-grid{grid-template-columns:1fr !important}
+@media(max-width:700px){
+  .export-overlay{padding:8px !important}
+  .export-card{
+    width:calc(100vw - 16px) !important;
+    max-width:none !important;
+    padding:10px !important;
+    border-radius:18px !important;
+  }
+  .export-head{align-items:flex-start !important}
+  .export-head strong{font-size:14px;line-height:1.35}
+  .export-head-actions{flex-shrink:0}
+  .vertical-export-root{
+    width:100% !important;
+    max-width:100% !important;
+    padding:22px 18px 28px !important;
+  }
+  .vertical-export-root h1{font-size:27px !important}
+  .vexp-sub{font-size:13px !important}
+  .vexp-info{grid-template-columns:1fr !important}
+  .vexp-day-head{align-items:flex-start !important;flex-direction:column !important;gap:4px !important}
+}
 </style>
 
 </head>
@@ -1634,7 +1714,7 @@ function buildVerticalExportHtml(){
   }).join("");
 
   return `<div id="verticalExportRoot" class="vertical-export-root">
-    <div class="vexp-title">✈️ TRIP PLANNER</div>
+    <div class="vexp-title">✈️ 우리들의 여행플래너</div>
     <h1>${esc(meta.title)}</h1>
     <p class="vexp-sub">${esc(meta.start)} ~ ${esc(meta.end)} · ${esc(meta.desc)}</p>
     <div class="vexp-info">
@@ -1702,7 +1782,7 @@ async function downloadExportPng(){
     showToast("이미지를 저장했어요. 다운로드 폴더를 확인해주세요.");
   }catch(e){
     console.error(e);
-    showToast("이미지 저장에 실패했어요. 다시 눌러주세요.");
+    showToast("이미지 저장에 실패했어요. Android 저장 기능을 확인해주세요.");
   }
 }
 
@@ -1721,87 +1801,6 @@ async function shareExportImage(){
   }catch(e){ console.error(e); showToast("이미지 공유에 실패했어요."); }
 }
 
-async function makeExportCanvas(){
-  const svg=buildExportSvg();
-  const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
-  try{
-    const img=new Image();
-    await new Promise((resolve,reject)=>{
-      img.onload=resolve;
-      img.onerror=reject;
-      img.src=url;
-    });
-    const canvas=document.createElement("canvas");
-    canvas.width=1400*1.5;
-    canvas.height=900*1.5;
-    const ctx=canvas.getContext("2d");
-    ctx.fillStyle="#f3f7f9";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    return canvas;
-  }finally{
-    URL.revokeObjectURL(url);
-  }
-}
-
-async function downloadExportPng(){
-  try{
-    const canvas=await makeExportCanvas();
-    const dataUrl=canvas.toDataURL("image/png");
-    const filename="trip-planner-summary.png";
-
-    // Android WebView에 네이티브 저장 브리지가 있으면 휴대폰에 직접 저장합니다.
-    if(window.Android && typeof window.Android.saveImage==="function"){
-      window.Android.saveImage(dataUrl,filename);
-      showToast("📱 휴대폰에 이미지 저장을 요청했어요.");
-      return;
-    }
-
-    const blob=await new Promise((resolve,reject)=>{
-      canvas.toBlob(b=>b?resolve(b):reject(new Error("PNG 변환 실패")),"image/png",1);
-    });
-
-    // Web Share가 가능한 환경에서는 갤러리/파일 저장 화면으로 이어질 수 있습니다.
-    const file=new File([blob],filename,{type:"image/png"});
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
-      await navigator.share({title:"여행 한 장 요약",text:"여행 플래너 요약 이미지",files:[file]});
-      showToast("이미지를 공유/저장할 수 있는 화면을 열었어요.");
-      return;
-    }
-
-    // 일반 브라우저 fallback
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;
-    a.download=filename;
-    a.style.display="none";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},1000);
-    showToast("이미지를 저장했어요. 다운로드 폴더를 확인해주세요.");
-  }catch(e){
-    if(e && e.name==="AbortError") return;
-    console.error(e);
-    showToast("이미지 저장에 실패했어요. 브라우저/앱의 저장 권한을 확인해주세요.");
-  }
-}
-
-async function shareExportImage(){
-  try{
-    const canvas=await makeExportCanvas();
-    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
-    const file=new File([blob],"fukuoka-trip-planner-summary.png",{type:"image/png"});
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
-      await navigator.share({title:"후쿠오카 여행 한 장 요약",text:"우리 부부 후쿠오카 여행 일정 요약본",files:[file]});
-      return;
-    }
-    const a=document.createElement("a");
-    a.download="fukuoka-trip-planner-summary.png";a.href=URL.createObjectURL(blob);a.click();
-    showToast("공유 기능이 없어 이미지를 저장했어요.");
-  }catch(e){
-    if(e && e.name!=="AbortError"){console.error(e);showToast("이미지 공유에 실패했어요.");}
-  }
-}
 </script>
 
 <script>
