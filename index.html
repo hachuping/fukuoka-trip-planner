@@ -6,6 +6,8 @@
 <title>TRIP PLANNER v23</title>
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Supabase UMD: Android WebView에서도 로그인 전에 확실히 로드 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --navy:#174d7d; --blue:#2d72ae; --sky:#eaf4fb; --cream:#fff8e6;
@@ -2627,33 +2629,51 @@ let sharedPlaces = [];
 let sharedFoods = [];
 
 async function ensureSupabaseLoaded(){
-  if(window.supabase && typeof window.supabase.createClient==="function") return true;
-
-  const status=document.getElementById('sbStatus');
-  if(status) status.textContent='연결 기능을 준비하는 중이에요…';
-
-  const loadScript=(src)=>new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    s.src=src;
-    s.async=true;
-    s.onload=()=>resolve(true);
-    s.onerror=()=>reject(new Error('Supabase 라이브러리를 불러오지 못했습니다.'));
-    document.head.appendChild(s);
-  });
-
-  try{
-    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  }catch(e){
-    try{
-      await loadScript('https://unpkg.com/@supabase/supabase-js@2');
-    }catch(e2){
-      if(status) status.textContent='인터넷 연결을 확인한 뒤 다시 눌러주세요.';
-      console.error(e2);
-      return false;
-    }
+  // 1) HTML에서 먼저 로드한 UMD가 있으면 바로 사용
+  if(window.supabase && typeof window.supabase.createClient === 'function'){
+    return true;
   }
 
-  return !!(window.supabase && typeof window.supabase.createClient==="function");
+  const status=document.getElementById('loginStatus') || document.getElementById('sbStatus');
+  if(status) status.textContent='연결 기능을 준비하는 중이에요…';
+
+  // 2) 혹시 초기 로드가 실패했다면 정확한 UMD 파일로 한 번만 재시도
+  const src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js';
+
+  return await new Promise((resolve)=>{
+    const old=document.querySelector('script[data-supabase-loader="retry"]');
+    if(old){
+      const started=Date.now();
+      const timer=setInterval(()=>{
+        if(window.supabase && typeof window.supabase.createClient==='function'){
+          clearInterval(timer);
+          resolve(true);
+        }else if(Date.now()-started>12000){
+          clearInterval(timer);
+          resolve(false);
+        }
+      },100);
+      return;
+    }
+
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=false;
+    s.dataset.supabaseLoader='retry';
+
+    let done=false;
+    const finish=(ok)=>{
+      if(done) return;
+      done=true;
+      clearTimeout(timeout);
+      resolve(ok && !!(window.supabase && typeof window.supabase.createClient==='function'));
+    };
+
+    const timeout=setTimeout(()=>finish(false),12000);
+    s.onload=()=>finish(true);
+    s.onerror=()=>finish(false);
+    document.head.appendChild(s);
+  });
 }
 
 function goLogin(){
@@ -2739,37 +2759,69 @@ async function signIn(){
   try{
     if(status) status.textContent='로그인 연결을 준비하고 있어요…';
 
-    // Android WebView에서는 CDN 로딩이 늦을 수 있으므로
-    // 로그인 버튼을 누른 순간 Supabase 라이브러리를 확실히 준비합니다.
-    const ready = await ensureSupabaseLoaded();
+    const ready=await ensureSupabaseLoaded();
     if(!ready){
-      throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.');
+      throw new Error('Supabase 연결 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해주세요.');
     }
 
     const url=(localStorage.getItem('fukuoka_sb_url')||'').trim().replace(/\/$/,'');
     const key=(localStorage.getItem('fukuoka_sb_key')||'').trim();
+
     if(!url || !key){
       throw new Error('Supabase 연결정보가 없습니다. 연결정보를 다시 입력해주세요.');
     }
 
-    if(!sb){
-      sb=window.supabase.createClient(url,key);
-    }
+    // 연결정보가 바뀌었을 가능성이 있으므로 로그인할 때마다 최신 정보로 클라이언트를 만듭니다.
+    sb=window.supabase.createClient(url,key,{
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:false
+      }
+    });
 
     if(status) status.textContent='로그인 중이에요…';
 
-    // 네트워크가 멈춰서 버튼이 무한 대기하지 않도록 20초 제한
-    const loginPromise=sb.auth.signInWithPassword({email,password});
-    const timeoutPromise=new Promise((_,reject)=>
-      setTimeout(()=>reject(new Error('LOGIN_TIMEOUT')),20000)
-    );
+    // 20초 이상 응답이 없으면 무한 대기를 막습니다.
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),20000);
 
-    const result=await Promise.race([loginPromise,timeoutPromise]);
-    const error=result?.error;
-    if(error) throw error;
+    let result;
+    try{
+      // supabase-js가 사용하는 fetch에 AbortSignal을 직접 넣을 수 없는 버전 호환 문제가 있어
+      // 기본 signInWithPassword를 사용하고, 바깥에서 timeout만 감시합니다.
+      const loginPromise=sb.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if(status) status.textContent='로그인되었습니다. 여행 데이터를 불러오는 중…';
+      result=await Promise.race([
+        loginPromise,
+        new Promise((_,reject)=>{
+          setTimeout(()=>reject(new Error('LOGIN_TIMEOUT')),20000);
+        })
+      ]);
+    }finally{
+      clearTimeout(timeout);
+    }
 
+    if(!result){
+      throw new Error('로그인 응답을 받지 못했어요.');
+    }
+
+    const {data,error}=result;
+
+    if(error){
+      throw error;
+    }
+
+    if(!data || !data.session){
+      throw new Error('로그인 세션을 만들지 못했어요.');
+    }
+
+    if(status) status.textContent='로그인 성공! 여행 데이터를 불러오는 중…';
+
+    // 로그인 성공을 먼저 확정한 뒤 화면을 전환합니다.
     const loginLayer=document.getElementById('loginLayer');
     if(loginLayer) loginLayer.style.display='none';
 
@@ -2785,7 +2837,11 @@ async function signIn(){
     }
 
     if(typeof renderAll==='function'){
-      try{ renderAll(); }catch(e){ console.warn('화면 새로고침 실패:',e); }
+      try{
+        renderAll();
+      }catch(e){
+        console.warn('화면 새로고침 실패:',e);
+      }
     }
 
     if(status) status.textContent='';
@@ -2794,19 +2850,33 @@ async function signIn(){
     console.error('signIn error:',e);
 
     let message='로그인에 실패했어요.';
-    if(e && e.message==='LOGIN_TIMEOUT'){
-      message='로그인 서버 응답이 늦어요. 인터넷 연결을 확인하고 다시 눌러주세요.';
-    }else if(e && e.message){
-      const m=String(e.message);
-      if(m.includes('Invalid login credentials')){
-        message='이메일 또는 비밀번호가 올바르지 않아요.';
-      }else if(m.includes('Email not confirmed')){
-        message='이메일 인증이 아직 완료되지 않았어요.';
-      }else if(m.includes('Supabase 라이브러리')){
-        message=m;
-      }
+
+    const raw=String(
+      (e && e.message) ||
+      (e && e.error_description) ||
+      e ||
+      ''
+    );
+
+    const lower=raw.toLowerCase();
+
+    if(raw==='LOGIN_TIMEOUT'){
+      message='로그인 서버 응답이 20초 동안 없어요. 인터넷 연결 또는 Supabase 설정을 확인해주세요.';
+    }else if(lower.includes('invalid login credentials')){
+      message='이메일 또는 비밀번호가 올바르지 않아요.';
+    }else if(lower.includes('email not confirmed')){
+      message='이메일 인증이 아직 완료되지 않았어요.';
+    }else if(lower.includes('failed to fetch') || lower.includes('network')){
+      message='Supabase 서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요.';
+    }else if(lower.includes('supabase') || lower.includes('library')){
+      message=raw;
+    }else if(raw){
+      // 원인을 숨기지 않고 화면에 표시해서 다음 수정 때 정확히 확인할 수 있게 합니다.
+      message='로그인 실패: '+raw;
     }
+
     if(status) status.textContent=message;
+
   }finally{
     if(loginBtn){
       loginBtn.disabled=false;
